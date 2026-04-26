@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON CYBERPUNK: MOBILE RUNNER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+        body { background: #050505; overflow: hidden; font-family: 'Orbitron', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #gameContainer { position: relative; width: 100vw; height: 100vh; background: #0a0a0a; overflow: hidden; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .ui { position: absolute; color: #00ffff; pointer-events: none; text-shadow: 0 0 10px #00ffff; font-size: 18px; z-index: 10; }
+        #scoreDisplay { top: 20px; left: 20px; }
+        #healthBar { top: 20px; right: 20px; width: 120px; height: 15px; border: 2px solid #ff00ff; border-radius: 10px; overflow: hidden; }
+        #healthFill { width: 100%; height: 100%; background: #ff00ff; transition: width 0.3s; }
+        .menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        h1 { color: #00ffff; font-size: 32px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px #00ffff; }
+        .btn { padding: 15px 40px; border: 3px solid #00ffff; background: transparent; color: #00ffff; font-family: 'Orbitron'; font-size: 20px; font-weight: bold; box-shadow: 0 0 15px rgba(0,255,255,0.3); }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="scoreDisplay" class="ui">SCORE: 0</div>
+        <div id="healthBar" class="ui"><div id="healthFill"></div></div>
+        
+        <div id="mainMenu" class="menu">
+            <h1>NEON CYBERPUNK</h1>
+            <button class="btn" onclick="startGame()">OYUNU BAŞLAT</button>
+        </div>
+
+        <div id="gameOverMenu" class="menu" style="display:none;">
+            <h1>SİSTEM ÇÖKTÜ</h1>
+            <button class="btn" onclick="location.reload()">TEKRAR DENE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameRunning = false;
+        let score = 0;
+        let lastTime = 0;
+
+        const player = { x: 0, y: 0, width: 40, height: 40, health: 100, lastShot: 0 };
+        let enemies = [];
+        let bullets = [];
+        let touchX = 0;
+        let touchY = 0;
+        let isTouching = false;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 100;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- GELİŞMİŞ MOBİL KONTROL (RELATIVE MOVEMENT) ---
+        canvas.addEventListener('touchstart', (e) => {
+            isTouching = true;
+            const touch = e.touches[0];
+            touchX = touch.clientX;
+            touchY = touch.clientY;
+            if(gameRunning) shoot();
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isTouching) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - touchX;
+            const dy = touch.clientY - touchY;
+            player.x += dx;
+            player.y += dy;
+            touchX = touch.clientX;
+            touchY = touch.clientY;
+            // Sınırlar
+            player.x = Math.max(20, Math.min(canvas.width - 20, player.x));
+            player.y = Math.max(20, Math.min(canvas.height - 20, player.y));
+            if(gameRunning) shoot();
+        }, {passive: false});
+
+        canvas.addEventListener('touchend', () => isTouching = false);
+
+        function shoot() {
+            const now = Date.now();
+            if (now - player.lastShot < 150) return;
+            bullets.push({ x: player.x, y: player.y - 20, vy: -12 });
+            player.lastShot = now;
+        }
+
+        function startGame() {
+            document.getElementById('mainMenu').style.display = 'none';
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Arka Plan
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gemi Çizimi (Neon Efektli)
+            ctx.shadowBlur = 15; ctx.shadowColor = '#00ffff';
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y - 25);
+            ctx.lineTo(player.x - 20, player.y + 15);
+            ctx.lineTo(player.x + 20, player.y + 15);
+            ctx.closePath();
+            ctx.fill();
+
+            // Mermiler
+            ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
+            bullets.forEach((b, i) => {
+                b.y += b.vy;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(b.x - 2, b.y, 4, 15);
+                if (b.y < 0) bullets.splice(i, 1);
+            });
+
+            // Düşmanlar (Neon Pembe)
+            if (Math.random() < 0.04) {
+                enemies.push({ x: Math.random() * (canvas.width - 40) + 20, y: -30, speed: 4 + Math.random() * 4 });
+            }
+            
+            enemies.forEach((en, i) => {
+                en.y += en.speed;
+                ctx.fillStyle = '#ff00ff';
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 20;
+                ctx.fillRect(en.x - 15, en.y, 30, 30);
+
+                // Çarpışma: Gemi ve Düşman
+                const distToPlayer = Math.hypot(player.x - en.x, player.y - en.y);
+                if (distToPlayer < 35) {
+                    player.health -= 20;
+                    enemies.splice(i, 1);
+                    document.getElementById('healthFill').style.width = player.health + '%';
+                    if (player.health <= 0) {
+                        gameRunning = false;
+                        document.getElementById('gameOverMenu').style.display = 'flex';
+                    }
+                }
+
+                // Çarpışma: Mermi ve Düşman
+                bullets.forEach((b, bi) => {
+                    const distToBullet = Math.hypot(b.x - en.x, b.y - en.y);
+                    if (distToBullet < 25) {
+                        score += 10;
+                        enemies.splice(i, 1);
+                        bullets.splice(bi, 1);
+                    }
+                });
+
+                if (en.y > canvas.height) enemies.splice(i, 1);
+            });
+
+            document.getElementById('scoreDisplay').innerText = "SCORE: " + score;
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>
