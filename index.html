@@ -46,7 +46,12 @@
         let gameRunning = false, score = 0, level = 1, combo = 0, comboTimer = 0, lastTime = 0;
         const player = { x: 0, y: 0, health: 100, shield: false, rapid: false, multi: false, timers: {s:0, r:0, m:0}, lastShot: 0 };
         let enemies = [], bullets = [], particles = [], powerups = [], stars = [];
-        const types = { drone: {c:'#ff0040', h:1, s:3, sc:10, sz:15}, hunter: {c:'#ff6600', h:2, s:4, sc:25, sz:20}, tank: {c:'#f0f', h:5, s:2, sc:50, sz:30}, boss: {c:'#0ff', h:20, s:1.5, sc:200, sz:50} };
+        const types = { 
+            drone: {c:'#ff0040', h:1, s:3, sc:10, sz:20}, 
+            hunter: {c:'#ff6600', h:3, s:4, sc:25, sz:25}, 
+            tank: {c:'#f0f', h:8, s:2, sc:50, sz:35}, 
+            boss: {c:'#0ff', h:30, s:1, sc:200, sz:60} 
+        };
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; player.x = canvas.width/2; player.y = canvas.height-100; initStars(); }
         function initStars() { stars = []; for(let i=0; i<50; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*2+1}); }
@@ -67,7 +72,7 @@
         function createP(x,y,c,ct=10){ for(let i=0;i<ct;i++){ let a=Math.random()*Math.PI*2, sp=Math.random()*3+1; particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, l:1, c}); } }
 
         function shoot(){
-            let now = Date.now(), rate = player.rapid ? 80 : 180;
+            let now = Date.now(), rate = player.rapid ? 80 : 200;
             if(now-player.lastShot < rate) return;
             if(player.multi){
                 bullets.push({x:player.x,y:player.y-20,vx:0,vy:-10},{x:player.x-15,y:player.y-10,vx:-2,vy:-10},{x:player.x+15,y:player.y-10,vx:2,vy:-10});
@@ -89,7 +94,7 @@
             document.getElementById('rI').classList.toggle('active', player.rapid);
             document.getElementById('mI').classList.toggle('active', player.multi);
 
-            if(player.shield){ ctx.beginPath(); ctx.arc(player.x,player.y,35,0,Math.PI*2); ctx.strokeStyle='#0f0'; ctx.stroke(); }
+            if(player.shield){ ctx.beginPath(); ctx.arc(player.x,player.y,35,0,Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); }
             ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.moveTo(player.x,player.y-20); ctx.lineTo(player.x-15,player.y+15); ctx.lineTo(player.x+15,player.y+15); ctx.fill();
 
             bullets.forEach((b,i)=>{ b.x+=b.vx; b.y+=b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2,b.y,4,10); if(b.y<0) bullets.splice(i,1); });
@@ -101,8 +106,33 @@
             }
 
             enemies.forEach((en,i)=>{
-                en.y += en.s; ctx.fillStyle=en.c; ctx.shadowBlur=10; ctx.shadowColor=en.c;
-                ctx.fillRect(en.x-en.sz/2, en.y-en.sz/2, en.sz, en.sz);
+                en.y += en.s; 
+                ctx.save();
+                ctx.translate(en.x, en.y);
+                ctx.fillStyle=en.c; ctx.shadowBlur=15; ctx.shadowColor=en.c;
+                
+                // --- ŞEKİL ÇİZİMİ ---
+                ctx.beginPath();
+                if(en.t === 'drone') { // Üçgen
+                    ctx.moveTo(0, -en.sz/2); ctx.lineTo(en.sz/2, en.sz/2); ctx.lineTo(-en.sz/2, en.sz/2);
+                } else if(en.t === 'hunter') { // Kare
+                    ctx.rect(-en.sz/2, -en.sz/2, en.sz, en.sz);
+                } else if(en.t === 'tank') { // Daire
+                    ctx.arc(0, 0, en.sz/2, 0, Math.PI*2);
+                } else if(en.t === 'boss') { // Çokgen
+                    for(let j=0; j<6; j++) {
+                        let angle = (j/6)*Math.PI*2;
+                        ctx.lineTo(Math.cos(angle)*en.sz/2, Math.sin(angle)*en.sz/2);
+                    }
+                }
+                ctx.closePath(); ctx.fill();
+
+                // --- DÜŞMAN CAN BARI ---
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(-en.sz/2, -en.sz/2 - 12, en.sz, 5);
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(-en.sz/2, -en.sz/2 - 12, en.sz * (en.ch / types[en.t].h), 5);
+                ctx.restore();
                 
                 let d = Math.hypot(player.x-en.x, player.y-en.y);
                 if(d < en.sz/2+20){
@@ -112,11 +142,11 @@
                 }
 
                 bullets.forEach((b,bi)=>{
-                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+5){
+                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+10){
                         en.ch--; bullets.splice(bi,1); createP(b.x,b.y,'#fff',5);
                         if(en.ch<=0){
                             createP(en.x,en.y,en.c,15); score+=en.sc; enemies.splice(i,1);
-                            combo++; comboTimer=3; if(Math.random()<0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
+                            combo++; comboTimer=3; if(Math.random()<0.2) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
                             if(score > level*300) { level++; document.getElementById('levelDisplay').innerText="LEVEL: "+level; }
                         }
                     }
@@ -126,7 +156,7 @@
 
             powerups.forEach((p,i)=>{
                 p.y+=3; ctx.font='20px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
-                if(Math.hypot(player.x-p.x, player.y-p.y)<30){
+                if(Math.hypot(player.x-p.x, player.y-p.y)<35){
                     if(p.t==='s') {player.shield=true; player.timers.s=10;}
                     if(p.t==='r') {player.rapid=true; player.timers.r=10;}
                     if(p.t==='m') {player.multi=true; player.timers.m=10;}
