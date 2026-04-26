@@ -17,8 +17,8 @@
         #healthBar { top: 20px; right: 20px; width: 120px; height: 15px; border: 2px solid #ff00ff; border-radius: 10px; overflow: hidden; }
         #healthFill { width: 100%; height: 100%; background: #ff00ff; transition: width 0.3s; }
         
-        /* ÖZEL GÜÇ BARLARI STİLLERİ */
-        .powerup-indicator { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; }
+        /* GÜÇ BARLARI - YUKARI TAŞINDI (bottom: 100px) */
+        .powerup-indicator { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; }
         .p-unit { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .p-icon { width: 35px; height: 35px; border: 2px solid; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.2; font-size: 16px; }
         .p-icon.active { opacity: 1; animation: pulse 1s infinite; }
@@ -126,17 +126,12 @@
 
             bullets.forEach((b,i)=>{ b.x+=b.vx; b.y+=b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2,b.y,4,12); if(b.y<0) bullets.splice(i,1); });
 
-            // --- BOSS VE DÜŞMAN ÇIKMA MANTIĞI ---
             if(Math.random()<0.03 + (level*0.004)){
                 let spawnList = ['drone'];
                 if(level >= 2) spawnList.push('hunter');
                 if(level >= 3) spawnList.push('tank');
-                
                 let t = spawnList[Math.floor(Math.random()*spawnList.length)];
-                
-                // BOSS: Sadece Level 4 ve üstünde, belirli puanlarda ve ekranda Boss yoksa gelir
                 if(level >= 4 && score > 0 && score % 1000 < 100 && !enemies.some(e=>e.t==='boss') && Math.random() < 0.1) t='boss';
-                
                 let data = types[t]; enemies.push({x:Math.random()*canvas.width, y:-60, t, ...data, ch:data.h});
             }
 
