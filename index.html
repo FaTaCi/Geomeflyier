@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CYBERPUNK: DATA RUNNER PRO</title>
+    <title>NEON CYBERPUNK: DATA RUNNER FINAL</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
@@ -16,10 +16,17 @@
         #comboDisplay { top: 80px; left: 20px; color: #ff6600; font-size: 16px; opacity: 0; transition: opacity 0.3s; }
         #healthBar { top: 20px; right: 20px; width: 120px; height: 15px; border: 2px solid #ff00ff; border-radius: 10px; overflow: hidden; }
         #healthFill { width: 100%; height: 100%; background: #ff00ff; transition: width 0.3s; }
-        .powerup-indicator { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; }
+        
+        /* ÖZEL GÜÇ BARLARI STİLLERİ */
+        .powerup-indicator { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; }
+        .p-unit { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .p-icon { width: 35px; height: 35px; border: 2px solid; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.2; font-size: 16px; }
         .p-icon.active { opacity: 1; animation: pulse 1s infinite; }
+        .p-bar-bg { width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; opacity: 0; }
+        .p-bar-bg.visible { opacity: 1; }
+        .p-bar-fill { width: 0%; height: 100%; transition: width 0.1s linear; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        
         .menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
         h1 { color: #00ffff; font-size: 28px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px #00ffff; }
         .btn { padding: 15px 30px; border: 3px solid #00ffff; background: transparent; color: #00ffff; font-family: 'Orbitron'; font-size: 18px; font-weight: bold; }
@@ -32,11 +39,22 @@
         <div id="levelDisplay" class="ui">LEVEL: 1</div>
         <div id="comboDisplay" class="ui">COMBO x1</div>
         <div id="healthBar" class="ui"><div id="healthFill"></div></div>
+        
         <div class="powerup-indicator ui">
-            <div id="sI" class="p-icon" style="border-color:#0f0; color:#0f0;">🛡️</div>
-            <div id="rI" class="p-icon" style="border-color:#f0f; color:#f0f;">⚡</div>
-            <div id="mI" class="p-icon" style="border-color:#ff0; color:#ff0;">🔥</div>
+            <div class="p-unit">
+                <div id="sI" class="p-icon" style="border-color:#0f0; color:#0f0;">🛡️</div>
+                <div id="sB" class="p-bar-bg"><div id="sF" class="p-bar-fill" style="background:#0f0;"></div></div>
+            </div>
+            <div class="p-unit">
+                <div id="rI" class="p-icon" style="border-color:#f0f; color:#f0f;">⚡</div>
+                <div id="rB" class="p-bar-bg"><div id="rF" class="p-bar-fill" style="background:#f0f;"></div></div>
+            </div>
+            <div class="p-unit">
+                <div id="mI" class="p-icon" style="border-color:#ff0; color:#ff0;">🔥</div>
+                <div id="mB" class="p-bar-bg"><div id="mF" class="p-bar-fill" style="background:#ff0;"></div></div>
+            </div>
         </div>
+
         <div id="mainMenu" class="menu"><h1>NEON CYBERPUNK</h1><button class="btn" onclick="startGame()">MISSION START</button></div>
         <div id="gameOverMenu" class="menu" style="display:none;"><h1>MISSION FAILED</h1><div id="fS" style="color:#ff0;margin-bottom:20px;"></div><button class="btn" onclick="location.reload()">RETRY</button></div>
     </div>
@@ -49,12 +67,12 @@
         const types = { 
             drone: {c:'#ff0040', h:1, s:3, sc:10, sz:20}, 
             hunter: {c:'#ff6600', h:3, s:4, sc:25, sz:25}, 
-            tank: {c:'#f0f', h:8, s:2, sc:50, sz:35}, 
-            boss: {c:'#0ff', h:30, s:1, sc:200, sz:60} 
+            tank: {c:'#f0f', h:8, s:2.5, sc:50, sz:35}, 
+            boss: {c:'#0ff', h:40, s:1.2, sc:250, sz:65} 
         };
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; player.x = canvas.width/2; player.y = canvas.height-100; initStars(); }
-        function initStars() { stars = []; for(let i=0; i<50; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*2+1}); }
+        function initStars() { stars = []; for(let i=0; i<60; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*2+1}); }
         window.addEventListener('resize', resize); resize();
 
         let tX = 0, tY = 0, isT = false;
@@ -72,11 +90,11 @@
         function createP(x,y,c,ct=10){ for(let i=0;i<ct;i++){ let a=Math.random()*Math.PI*2, sp=Math.random()*3+1; particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, l:1, c}); } }
 
         function shoot(){
-            let now = Date.now(), rate = player.rapid ? 80 : 200;
+            let now = Date.now(), rate = player.rapid ? 90 : 220;
             if(now-player.lastShot < rate) return;
             if(player.multi){
-                bullets.push({x:player.x,y:player.y-20,vx:0,vy:-10},{x:player.x-15,y:player.y-10,vx:-2,vy:-10},{x:player.x+15,y:player.y-10,vx:2,vy:-10});
-            } else { bullets.push({x:player.x,y:player.y-20,vx:0,vy:-10}); }
+                bullets.push({x:player.x,y:player.y-20,vx:0,vy:-12},{x:player.x-15,y:player.y-10,vx:-3,vy:-11},{x:player.x+15,y:player.y-10,vx:3,vy:-11});
+            } else { bullets.push({x:player.x,y:player.y-20,vx:0,vy:-12}); }
             player.lastShot = now;
         }
 
@@ -85,91 +103,89 @@
         function gameLoop(ts){
             if(!gameRunning) return; let dt = (ts-lastTime)/1000; lastTime=ts;
             ctx.fillStyle='#050505'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            
             stars.forEach(s=>{ s.y+=s.sp; if(s.y>canvas.height) s.y=0; ctx.fillStyle='#fff'; ctx.fillRect(s.x,s.y,s.s,s.s); });
 
-            // Player logic
-            ['s','r','m'].forEach(k=>{ if(player.timers[k]>0){ player.timers[k]-=dt; if(player.timers[k]<=0) player[k==='s'?'shield':k==='r'?'rapid':'multi']=false; } });
-            document.getElementById('sI').classList.toggle('active', player.shield);
-            document.getElementById('rI').classList.toggle('active', player.rapid);
-            document.getElementById('mI').classList.toggle('active', player.multi);
+            // --- GÜÇ BARLARI GÜNCELLEME ---
+            const pKeys = {s:'shield', r:'rapid', m:'multi'};
+            Object.keys(pKeys).forEach(k => {
+                if(player.timers[k] > 0) {
+                    player.timers[k] -= dt;
+                    document.getElementById(k+'I').classList.add('active');
+                    document.getElementById(k+'B').classList.add('visible');
+                    document.getElementById(k+'F').style.width = (player.timers[k] / 10 * 100) + '%';
+                    if(player.timers[k] <= 0) {
+                        player[pKeys[k]] = false;
+                        document.getElementById(k+'I').classList.remove('active');
+                        document.getElementById(k+'B').classList.remove('visible');
+                    }
+                }
+            });
 
-            if(player.shield){ ctx.beginPath(); ctx.arc(player.x,player.y,35,0,Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); }
-            ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.moveTo(player.x,player.y-20); ctx.lineTo(player.x-15,player.y+15); ctx.lineTo(player.x+15,player.y+15); ctx.fill();
+            if(player.shield){ ctx.beginPath(); ctx.arc(player.x,player.y,38,0,Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=3; ctx.stroke(); }
+            ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.moveTo(player.x,player.y-20); ctx.lineTo(player.x-18,player.y+15); ctx.lineTo(player.x+18,player.y+15); ctx.fill();
 
-            bullets.forEach((b,i)=>{ b.x+=b.vx; b.y+=b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2,b.y,4,10); if(b.y<0) bullets.splice(i,1); });
+            bullets.forEach((b,i)=>{ b.x+=b.vx; b.y+=b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2,b.y,4,12); if(b.y<0) bullets.splice(i,1); });
 
-            if(Math.random()<0.03 + (level*0.005)){
-                let keys = Object.keys(types), t = keys[Math.floor(Math.random()*Math.min(keys.length, Math.ceil(level/2)))];
-                if(score>0 && score%500<50 && Math.random()<0.05) t='boss';
-                let data = types[t]; enemies.push({x:Math.random()*canvas.width, y:-50, t, ...data, ch:data.h});
+            // --- BOSS VE DÜŞMAN ÇIKMA MANTIĞI ---
+            if(Math.random()<0.03 + (level*0.004)){
+                let spawnList = ['drone'];
+                if(level >= 2) spawnList.push('hunter');
+                if(level >= 3) spawnList.push('tank');
+                
+                let t = spawnList[Math.floor(Math.random()*spawnList.length)];
+                
+                // BOSS: Sadece Level 4 ve üstünde, belirli puanlarda ve ekranda Boss yoksa gelir
+                if(level >= 4 && score > 0 && score % 1000 < 100 && !enemies.some(e=>e.t==='boss') && Math.random() < 0.1) t='boss';
+                
+                let data = types[t]; enemies.push({x:Math.random()*canvas.width, y:-60, t, ...data, ch:data.h});
             }
 
             enemies.forEach((en,i)=>{
-                en.y += en.s; 
-                ctx.save();
-                ctx.translate(en.x, en.y);
+                en.y += en.s; ctx.save(); ctx.translate(en.x, en.y);
                 ctx.fillStyle=en.c; ctx.shadowBlur=15; ctx.shadowColor=en.c;
-                
-                // --- ŞEKİL ÇİZİMİ ---
                 ctx.beginPath();
-                if(en.t === 'drone') { // Üçgen
-                    ctx.moveTo(0, -en.sz/2); ctx.lineTo(en.sz/2, en.sz/2); ctx.lineTo(-en.sz/2, en.sz/2);
-                } else if(en.t === 'hunter') { // Kare
-                    ctx.rect(-en.sz/2, -en.sz/2, en.sz, en.sz);
-                } else if(en.t === 'tank') { // Daire
-                    ctx.arc(0, 0, en.sz/2, 0, Math.PI*2);
-                } else if(en.t === 'boss') { // Çokgen
-                    for(let j=0; j<6; j++) {
-                        let angle = (j/6)*Math.PI*2;
-                        ctx.lineTo(Math.cos(angle)*en.sz/2, Math.sin(angle)*en.sz/2);
-                    }
-                }
+                if(en.t==='drone') { ctx.moveTo(0,-en.sz/2); ctx.lineTo(en.sz/2,en.sz/2); ctx.lineTo(-en.sz/2,en.sz/2); }
+                else if(en.t==='hunter') { ctx.rect(-en.sz/2,-en.sz/2,en.sz,en.sz); }
+                else if(en.t==='tank') { ctx.arc(0,0,en.sz/2,0,Math.PI*2); }
+                else if(en.t==='boss') { for(let j=0;j<6;j++){ let a=(j/6)*Math.PI*2; ctx.lineTo(Math.cos(a)*en.sz/2, Math.sin(a)*en.sz/2); } }
                 ctx.closePath(); ctx.fill();
-
-                // --- DÜŞMAN CAN BARI ---
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(-en.sz/2, -en.sz/2 - 12, en.sz, 5);
-                ctx.fillStyle = '#0f0';
-                ctx.fillRect(-en.sz/2, -en.sz/2 - 12, en.sz * (en.ch / types[en.t].h), 5);
+                ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz, 6);
+                ctx.fillStyle='#0f0'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz*(en.ch/types[en.t].h), 6);
                 ctx.restore();
                 
                 let d = Math.hypot(player.x-en.x, player.y-en.y);
-                if(d < en.sz/2+20){
-                    if(player.shield){ createP(en.x,en.y,en.c,20); score+=en.sc; enemies.splice(i,1); }
-                    else { player.health-=10; createP(player.x,player.y,'#f00',20); enemies.splice(i,1); if(player.health<=0) {gameRunning=false; document.getElementById('gameOverMenu').style.display='flex'; document.getElementById('fS').innerText="SCORE: "+score; } }
+                if(d < en.sz/2+22){
+                    if(player.shield){ createP(en.x,en.y,en.c,25); score+=en.sc; enemies.splice(i,1); }
+                    else { player.health-=15; createP(player.x,player.y,'#f00',25); enemies.splice(i,1); if(player.health<=0){gameRunning=false; document.getElementById('gameOverMenu').style.display='flex'; document.getElementById('fS').innerText="SCORE: "+score;} }
                     document.getElementById('healthFill').style.width = player.health+'%';
                 }
-
                 bullets.forEach((b,bi)=>{
-                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+10){
+                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+12){
                         en.ch--; bullets.splice(bi,1); createP(b.x,b.y,'#fff',5);
                         if(en.ch<=0){
-                            createP(en.x,en.y,en.c,15); score+=en.sc; enemies.splice(i,1);
-                            combo++; comboTimer=3; if(Math.random()<0.2) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
-                            if(score > level*300) { level++; document.getElementById('levelDisplay').innerText="LEVEL: "+level; }
+                            createP(en.x,en.y,en.c,20); score+=en.sc; enemies.splice(i,1);
+                            combo++; comboTimer=3; if(Math.random()<0.22) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
+                            if(score > level*500) { level++; document.getElementById('levelDisplay').innerText="LEVEL: "+level; }
                         }
                     }
                 });
-                if(en.y>canvas.height) enemies.splice(i,1);
+                if(en.y>canvas.height+100) enemies.splice(i,1);
             });
 
             powerups.forEach((p,i)=>{
-                p.y+=3; ctx.font='20px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
-                if(Math.hypot(player.x-p.x, player.y-p.y)<35){
+                p.y+=3.5; ctx.font='24px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
+                if(Math.hypot(player.x-p.x, player.y-p.y)<40){
                     if(p.t==='s') {player.shield=true; player.timers.s=10;}
-                    if(p.t==='r') {player.rapid=true; player.timers.r=10;}
-                    if(p.t==='m') {player.multi=true; player.timers.m=10;}
+                    else if(p.t==='r') {player.rapid=true; player.timers.r=10;}
+                    else if(p.t==='m') {player.multi=true; player.timers.m=10;}
                     powerups.splice(i,1);
                 }
             });
 
-            particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.l-=0.02; ctx.globalAlpha=p.l; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,2,2); if(p.l<=0) particles.splice(i,1); });
+            particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.l-=0.025; ctx.globalAlpha=p.l; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,2.5,2.5); if(p.l<=0) particles.splice(i,1); });
             ctx.globalAlpha=1;
-
             if(comboTimer>0){ comboTimer-=dt; document.getElementById('comboDisplay').style.opacity=1; document.getElementById('comboDisplay').innerText="COMBO x"+combo; }
             else { combo=0; document.getElementById('comboDisplay').style.opacity=0; }
-
             document.getElementById('scoreDisplay').innerText="SCORE: "+score;
             requestAnimationFrame(gameLoop);
         }
