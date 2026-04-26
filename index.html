@@ -3,168 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CYBERPUNK: MOBILE RUNNER</title>
+    <title>NEON CYBERPUNK: DATA RUNNER PRO</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
-        body { background: #050505; overflow: hidden; font-family: 'Orbitron', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { background: #050505; overflow: hidden; font-family: 'Orbitron', sans-serif; height: 100vh; }
         #gameContainer { position: relative; width: 100vw; height: 100vh; background: #0a0a0a; overflow: hidden; }
         canvas { width: 100%; height: 100%; display: block; }
-        .ui { position: absolute; color: #00ffff; pointer-events: none; text-shadow: 0 0 10px #00ffff; font-size: 18px; z-index: 10; }
-        #scoreDisplay { top: 20px; left: 20px; }
+        .ui { position: absolute; color: #00ffff; pointer-events: none; text-shadow: 0 0 10px #00ffff; z-index: 10; }
+        #scoreDisplay { top: 20px; left: 20px; font-size: 18px; }
+        #levelDisplay { top: 50px; left: 20px; color: #ffff00; font-size: 14px; }
+        #comboDisplay { top: 80px; left: 20px; color: #ff6600; font-size: 16px; opacity: 0; transition: opacity 0.3s; }
         #healthBar { top: 20px; right: 20px; width: 120px; height: 15px; border: 2px solid #ff00ff; border-radius: 10px; overflow: hidden; }
         #healthFill { width: 100%; height: 100%; background: #ff00ff; transition: width 0.3s; }
+        .powerup-indicator { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; }
+        .p-icon { width: 35px; height: 35px; border: 2px solid; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.2; font-size: 16px; }
+        .p-icon.active { opacity: 1; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        h1 { color: #00ffff; font-size: 32px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px #00ffff; }
-        .btn { padding: 15px 40px; border: 3px solid #00ffff; background: transparent; color: #00ffff; font-family: 'Orbitron'; font-size: 20px; font-weight: bold; box-shadow: 0 0 15px rgba(0,255,255,0.3); }
+        h1 { color: #00ffff; font-size: 28px; text-align: center; margin-bottom: 20px; text-shadow: 0 0 20px #00ffff; }
+        .btn { padding: 15px 30px; border: 3px solid #00ffff; background: transparent; color: #00ffff; font-family: 'Orbitron'; font-size: 18px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="scoreDisplay" class="ui">SCORE: 0</div>
+        <div id="levelDisplay" class="ui">LEVEL: 1</div>
+        <div id="comboDisplay" class="ui">COMBO x1</div>
         <div id="healthBar" class="ui"><div id="healthFill"></div></div>
-        
-        <div id="mainMenu" class="menu">
-            <h1>NEON CYBERPUNK</h1>
-            <button class="btn" onclick="startGame()">OYUNU BAŞLAT</button>
+        <div class="powerup-indicator ui">
+            <div id="sI" class="p-icon" style="border-color:#0f0; color:#0f0;">🛡️</div>
+            <div id="rI" class="p-icon" style="border-color:#f0f; color:#f0f;">⚡</div>
+            <div id="mI" class="p-icon" style="border-color:#ff0; color:#ff0;">🔥</div>
         </div>
-
-        <div id="gameOverMenu" class="menu" style="display:none;">
-            <h1>SİSTEM ÇÖKTÜ</h1>
-            <button class="btn" onclick="location.reload()">TEKRAR DENE</button>
-        </div>
+        <div id="mainMenu" class="menu"><h1>NEON CYBERPUNK</h1><button class="btn" onclick="startGame()">MISSION START</button></div>
+        <div id="gameOverMenu" class="menu" style="display:none;"><h1>MISSION FAILED</h1><div id="fS" style="color:#ff0;margin-bottom:20px;"></div><button class="btn" onclick="location.reload()">RETRY</button></div>
     </div>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let gameRunning = false;
-        let score = 0;
-        let lastTime = 0;
+        let gameRunning = false, score = 0, level = 1, combo = 0, comboTimer = 0, lastTime = 0;
+        const player = { x: 0, y: 0, health: 100, shield: false, rapid: false, multi: false, timers: {s:0, r:0, m:0}, lastShot: 0 };
+        let enemies = [], bullets = [], particles = [], powerups = [], stars = [];
+        const types = { drone: {c:'#ff0040', h:1, s:3, sc:10, sz:15}, hunter: {c:'#ff6600', h:2, s:4, sc:25, sz:20}, tank: {c:'#f0f', h:5, s:2, sc:50, sz:30}, boss: {c:'#0ff', h:20, s:1.5, sc:200, sz:50} };
 
-        const player = { x: 0, y: 0, width: 40, height: 40, health: 100, lastShot: 0 };
-        let enemies = [];
-        let bullets = [];
-        let touchX = 0;
-        let touchY = 0;
-        let isTouching = false;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; player.x = canvas.width/2; player.y = canvas.height-100; initStars(); }
+        function initStars() { stars = []; for(let i=0; i<50; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*2+1}); }
+        window.addEventListener('resize', resize); resize();
 
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            player.x = canvas.width / 2;
-            player.y = canvas.height - 100;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        // --- GELİŞMİŞ MOBİL KONTROL (RELATIVE MOVEMENT) ---
-        canvas.addEventListener('touchstart', (e) => {
-            isTouching = true;
-            const touch = e.touches[0];
-            touchX = touch.clientX;
-            touchY = touch.clientY;
+        let tX = 0, tY = 0, isT = false;
+        canvas.addEventListener('touchstart', (e)=>{ isT=true; tX=e.touches[0].clientX; tY=e.touches[0].clientY; if(gameRunning) shoot(); });
+        canvas.addEventListener('touchmove', (e)=>{ 
+            e.preventDefault(); if(!isT) return; 
+            let dX = e.touches[0].clientX - tX; let dY = e.touches[0].clientY - tY;
+            player.x += dX; player.y += dY; tX = e.touches[0].clientX; tY = e.touches[0].clientY;
+            player.x = Math.max(20, Math.min(canvas.width-20, player.x));
+            player.y = Math.max(20, Math.min(canvas.height-20, player.y));
             if(gameRunning) shoot();
-        }, {passive: false});
+        });
+        canvas.addEventListener('touchend', ()=>isT=false);
 
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (!isTouching) return;
-            const touch = e.touches[0];
-            const dx = touch.clientX - touchX;
-            const dy = touch.clientY - touchY;
-            player.x += dx;
-            player.y += dy;
-            touchX = touch.clientX;
-            touchY = touch.clientY;
-            // Sınırlar
-            player.x = Math.max(20, Math.min(canvas.width - 20, player.x));
-            player.y = Math.max(20, Math.min(canvas.height - 20, player.y));
-            if(gameRunning) shoot();
-        }, {passive: false});
+        function createP(x,y,c,ct=10){ for(let i=0;i<ct;i++){ let a=Math.random()*Math.PI*2, sp=Math.random()*3+1; particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, l:1, c}); } }
 
-        canvas.addEventListener('touchend', () => isTouching = false);
-
-        function shoot() {
-            const now = Date.now();
-            if (now - player.lastShot < 150) return;
-            bullets.push({ x: player.x, y: player.y - 20, vy: -12 });
+        function shoot(){
+            let now = Date.now(), rate = player.rapid ? 80 : 180;
+            if(now-player.lastShot < rate) return;
+            if(player.multi){
+                bullets.push({x:player.x,y:player.y-20,vx:0,vy:-10},{x:player.x-15,y:player.y-10,vx:-2,vy:-10},{x:player.x+15,y:player.y-10,vx:2,vy:-10});
+            } else { bullets.push({x:player.x,y:player.y-20,vx:0,vy:-10}); }
             player.lastShot = now;
         }
 
-        function startGame() {
-            document.getElementById('mainMenu').style.display = 'none';
-            gameRunning = true;
-            requestAnimationFrame(gameLoop);
-        }
+        function startGame(){ document.getElementById('mainMenu').style.display='none'; gameRunning=true; requestAnimationFrame(gameLoop); }
 
-        function gameLoop(timestamp) {
-            if (!gameRunning) return;
-            const dt = timestamp - lastTime;
-            lastTime = timestamp;
-
-            // Arka Plan
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Gemi Çizimi (Neon Efektli)
-            ctx.shadowBlur = 15; ctx.shadowColor = '#00ffff';
-            ctx.fillStyle = '#00ffff';
-            ctx.beginPath();
-            ctx.moveTo(player.x, player.y - 25);
-            ctx.lineTo(player.x - 20, player.y + 15);
-            ctx.lineTo(player.x + 20, player.y + 15);
-            ctx.closePath();
-            ctx.fill();
-
-            // Mermiler
-            ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
-            bullets.forEach((b, i) => {
-                b.y += b.vy;
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(b.x - 2, b.y, 4, 15);
-                if (b.y < 0) bullets.splice(i, 1);
-            });
-
-            // Düşmanlar (Neon Pembe)
-            if (Math.random() < 0.04) {
-                enemies.push({ x: Math.random() * (canvas.width - 40) + 20, y: -30, speed: 4 + Math.random() * 4 });
-            }
+        function gameLoop(ts){
+            if(!gameRunning) return; let dt = (ts-lastTime)/1000; lastTime=ts;
+            ctx.fillStyle='#050505'; ctx.fillRect(0,0,canvas.width,canvas.height);
             
-            enemies.forEach((en, i) => {
-                en.y += en.speed;
-                ctx.fillStyle = '#ff00ff';
-                ctx.shadowColor = '#ff00ff';
-                ctx.shadowBlur = 20;
-                ctx.fillRect(en.x - 15, en.y, 30, 30);
+            stars.forEach(s=>{ s.y+=s.sp; if(s.y>canvas.height) s.y=0; ctx.fillStyle='#fff'; ctx.fillRect(s.x,s.y,s.s,s.s); });
 
-                // Çarpışma: Gemi ve Düşman
-                const distToPlayer = Math.hypot(player.x - en.x, player.y - en.y);
-                if (distToPlayer < 35) {
-                    player.health -= 20;
-                    enemies.splice(i, 1);
-                    document.getElementById('healthFill').style.width = player.health + '%';
-                    if (player.health <= 0) {
-                        gameRunning = false;
-                        document.getElementById('gameOverMenu').style.display = 'flex';
-                    }
+            // Player logic
+            ['s','r','m'].forEach(k=>{ if(player.timers[k]>0){ player.timers[k]-=dt; if(player.timers[k]<=0) player[k==='s'?'shield':k==='r'?'rapid':'multi']=false; } });
+            document.getElementById('sI').classList.toggle('active', player.shield);
+            document.getElementById('rI').classList.toggle('active', player.rapid);
+            document.getElementById('mI').classList.toggle('active', player.multi);
+
+            if(player.shield){ ctx.beginPath(); ctx.arc(player.x,player.y,35,0,Math.PI*2); ctx.strokeStyle='#0f0'; ctx.stroke(); }
+            ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.moveTo(player.x,player.y-20); ctx.lineTo(player.x-15,player.y+15); ctx.lineTo(player.x+15,player.y+15); ctx.fill();
+
+            bullets.forEach((b,i)=>{ b.x+=b.vx; b.y+=b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2,b.y,4,10); if(b.y<0) bullets.splice(i,1); });
+
+            if(Math.random()<0.03 + (level*0.005)){
+                let keys = Object.keys(types), t = keys[Math.floor(Math.random()*Math.min(keys.length, Math.ceil(level/2)))];
+                if(score>0 && score%500<50 && Math.random()<0.05) t='boss';
+                let data = types[t]; enemies.push({x:Math.random()*canvas.width, y:-50, t, ...data, ch:data.h});
+            }
+
+            enemies.forEach((en,i)=>{
+                en.y += en.s; ctx.fillStyle=en.c; ctx.shadowBlur=10; ctx.shadowColor=en.c;
+                ctx.fillRect(en.x-en.sz/2, en.y-en.sz/2, en.sz, en.sz);
+                
+                let d = Math.hypot(player.x-en.x, player.y-en.y);
+                if(d < en.sz/2+20){
+                    if(player.shield){ createP(en.x,en.y,en.c,20); score+=en.sc; enemies.splice(i,1); }
+                    else { player.health-=10; createP(player.x,player.y,'#f00',20); enemies.splice(i,1); if(player.health<=0) {gameRunning=false; document.getElementById('gameOverMenu').style.display='flex'; document.getElementById('fS').innerText="SCORE: "+score; } }
+                    document.getElementById('healthFill').style.width = player.health+'%';
                 }
 
-                // Çarpışma: Mermi ve Düşman
-                bullets.forEach((b, bi) => {
-                    const distToBullet = Math.hypot(b.x - en.x, b.y - en.y);
-                    if (distToBullet < 25) {
-                        score += 10;
-                        enemies.splice(i, 1);
-                        bullets.splice(bi, 1);
+                bullets.forEach((b,bi)=>{
+                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+5){
+                        en.ch--; bullets.splice(bi,1); createP(b.x,b.y,'#fff',5);
+                        if(en.ch<=0){
+                            createP(en.x,en.y,en.c,15); score+=en.sc; enemies.splice(i,1);
+                            combo++; comboTimer=3; if(Math.random()<0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
+                            if(score > level*300) { level++; document.getElementById('levelDisplay').innerText="LEVEL: "+level; }
+                        }
                     }
                 });
-
-                if (en.y > canvas.height) enemies.splice(i, 1);
+                if(en.y>canvas.height) enemies.splice(i,1);
             });
 
-            document.getElementById('scoreDisplay').innerText = "SCORE: " + score;
+            powerups.forEach((p,i)=>{
+                p.y+=3; ctx.font='20px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
+                if(Math.hypot(player.x-p.x, player.y-p.y)<30){
+                    if(p.t==='s') {player.shield=true; player.timers.s=10;}
+                    if(p.t==='r') {player.rapid=true; player.timers.r=10;}
+                    if(p.t==='m') {player.multi=true; player.timers.m=10;}
+                    powerups.splice(i,1);
+                }
+            });
+
+            particles.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.l-=0.02; ctx.globalAlpha=p.l; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,2,2); if(p.l<=0) particles.splice(i,1); });
+            ctx.globalAlpha=1;
+
+            if(comboTimer>0){ comboTimer-=dt; document.getElementById('comboDisplay').style.opacity=1; document.getElementById('comboDisplay').innerText="COMBO x"+combo; }
+            else { combo=0; document.getElementById('comboDisplay').style.opacity=0; }
+
+            document.getElementById('scoreDisplay').innerText="SCORE: "+score;
             requestAnimationFrame(gameLoop);
         }
     </script>
