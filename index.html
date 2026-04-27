@@ -22,13 +22,6 @@
         .btn { padding: 12px 30px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 8px; transition: 0.3s; width: 220px; }
         .btn:hover { background:rgba(0,255,255,0.2); box-shadow: 0 0 15px #0ff; }
         
-        /* MARKET & TABLO */
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px; }
-        .shop-item { border: 1px solid #f0f; padding: 10px; text-align: center; cursor: pointer; }
-        .selected { border: 2px solid #0f0; color: #0f0; }
-        #highScoreTable { margin: 15px; text-align: left; width: 200px; font-size: 14px; color: #ff0; }
-
-        /* GÜÇ BARLARI (Yukarı Taşındı) */
         .p-indicators { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; }
         .p-bar { width: 40px; height: 4px; background: rgba(255,255,255,0.1); margin-top: 5px; opacity: 0; }
         .p-fill { height: 100%; width: 0%; transition: 0.1s linear; }
@@ -50,23 +43,23 @@
         </div>
 
         <div class="p-indicators ui">
-            <div id="sI">🛡️<div class="p-bar" id="sB"><div id="sF" class="p-fill" style="background:#0f0"></div></div></div>
-            <div id="rI">⚡<div class="p-bar" id="rB"><div id="rF" class="p-fill" style="background:#f0f"></div></div></div>
-            <div id="mI">🔥<div class="p-bar" id="mB"><div id="mF" class="p-fill" style="background:#ff0"></div></div></div>
+            <div id="sI" style="opacity:0.2">🛡️<div class="p-bar" id="sB"><div id="sF" class="p-fill" style="background:#0f0"></div></div></div>
+            <div id="rI" style="opacity:0.2">⚡<div class="p-bar" id="rB"><div id="rF" class="p-fill" style="background:#f0f"></div></div></div>
+            <div id="mI" style="opacity:0.2">🔥<div class="p-bar" id="mB"><div id="mF" class="p-fill" style="background:#ff0"></div></div></div>
         </div>
 
         <div id="mainMenu" class="menu" style="display:flex;">
             <h1 style="margin-bottom:20px;">NEON RUNNER</h1>
             <button class="btn" onclick="startGame()">GÖREVE BAŞLA</button>
             <button class="btn" onclick="showMenu('shopMenu')">MARKET</button>
-            <div id="highScoreTable">EN YÜKSEK SKOR: <span id="bestS">0</span></div>
+            <div style="margin-top:20px; color:#ff0;">EN YÜKSEK SKOR: <span id="bestS">0</span></div>
         </div>
 
         <div id="shopMenu" class="menu">
             <h1>CYBER MARKET</h1>
-            <div class="shop-grid">
-                <div id="i-neon" class="shop-item" onclick="selectShip('neon')">NEON RUNNER<br><small>HIZLI</small></div>
-                <div id="i-tank" class="shop-item" onclick="buyShip('tank', 5000)">TITAN TANK<br><small>5000 KR</small></div>
+            <div style="display:flex; gap:10px; margin:20px;">
+                <div id="i-neon" style="border:1px solid #0ff; padding:10px; cursor:pointer;" onclick="selectShip('neon')">NEON RUNNER</div>
+                <div id="i-tank" style="border:1px solid #f0f; padding:10px; cursor:pointer;" onclick="buyShip('tank', 5000)">TITAN TANK (5000)</div>
             </div>
             <button class="btn" onclick="showMenu('mainMenu')">GERİ</button>
         </div>
@@ -78,9 +71,9 @@
         </div>
 
         <div id="overMenu" class="menu">
-            <h1 style="color:#f00">GÖREV BAŞARISIZ</h1>
+            <h1 style="color:#f00">BAĞLANTI KESİLDİ</h1>
             <div id="finalScore" style="margin:20px;"></div>
-            <button class="btn" onclick="location.reload()">YENİDEN DENE</button>
+            <button class="btn" onclick="location.reload()">RETRY</button>
         </div>
     </div>
 
@@ -94,7 +87,6 @@
         let currentShip = 'neon';
         const keys = {};
 
-        // --- SESLER (Senin .wav ve .mp3 dosyaların) ---
         const sfx = {
             intro: new Audio('sesler/giris-efekti.mp3'),
             bgm: new Audio('sesler/muzik.mp3'),
@@ -104,14 +96,13 @@
         };
         sfx.bgm.loop = true; sfx.bgm.volume = 0.15;
 
-        // --- OYUNCU VE DÜNYA ---
         const player = { x: 0, y: 0, h: 100, s: false, r: false, m: false, timers: {s:0, r:0, m:0}, lastS: 0 };
         let enemies = [], bullets = [], particles = [], powerups = [], stars = [];
         const types = { 
-            drone: {c:'#ff0040', h:1, s:3, sc:10, sz:20}, 
-            hunter: {c:'#ff6600', h:3, s:4, sc:25, sz:25}, 
-            tank: {c:'#f0f', h:10, s:2, sc:60, sz:35}, 
-            boss: {c:'#0ff', h:50, s:1, sc:500, sz:70} 
+            drone: {c:'#ff0040', h:1, s:3, sc:10, sz:22}, 
+            hunter: {c:'#ff6600', h:3, s:4, sc:25, sz:28}, 
+            tank: {c:'#f0f', h:10, s:2, sc:60, sz:38}, 
+            boss: {c:'#0ff', h:50, s:1, sc:500, sz:75} 
         };
 
         window.onload = () => {
@@ -126,15 +117,14 @@
         function resize() {
             canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             player.x = canvas.width/2; player.y = canvas.height-100;
-            stars = []; for(let i=0; i<70; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*3+1});
+            stars = []; for(let i=0; i<80; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*3+1});
         }
         window.addEventListener('resize', resize); resize();
 
-        // --- KONTROLLER ---
         window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='p' && gameRunning) togglePause(); });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
         
-        let tX = 0, tY = 0, isT = false;
+        let isT = false, tX = 0, tY = 0;
         canvas.addEventListener('touchstart', e => { isT=true; tX=e.touches[0].clientX; tY=e.touches[0].clientY; if(gameRunning && !gamePaused) shoot(); });
         canvas.addEventListener('touchmove', e => {
             if(!isT || gamePaused) return; e.preventDefault();
@@ -143,55 +133,36 @@
         });
         canvas.addEventListener('touchend', () => isT=false);
 
-        // --- FONKSİYONLAR ---
         function showMenu(id) {
             document.querySelectorAll('.menu').forEach(m => m.style.display = 'none');
-            document.getElementById(id).style.display = 'flex';
-            if(id === 'shopMenu') updateShopUI();
+            if(id !== 'none') document.getElementById(id).style.display = 'flex';
         }
 
         function startGame() {
-            showMenu('none'); gameRunning = true; sfx.bgm.play(); requestAnimationFrame(gameLoop);
+            showMenu('none'); gameRunning = true; sfx.bgm.play().catch(()=>{});
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
         }
 
         function togglePause() {
             gamePaused = !gamePaused;
             document.getElementById('pauseMenu').style.display = gamePaused ? 'flex' : 'none';
-            if(!gamePaused) requestAnimationFrame(gameLoop);
+            if(!gamePaused) { lastTime = performance.now(); requestAnimationFrame(gameLoop); }
         }
 
-        function buyShip(t, c) {
-            if(credits >= c && !owned.includes(t)) {
-                credits -= c; owned.push(t);
-                localStorage.setItem('fCredits', credits);
-                localStorage.setItem('fShips', JSON.stringify(owned));
-                selectShip(t);
-            } else if(owned.includes(t)) selectShip(t);
-        }
-
-        function selectShip(t) {
-            if(owned.includes(t)) { currentShip = t; updateShopUI(); }
-        }
-
-        function updateShopUI() {
-            document.getElementById('i-neon').className = currentShip==='neon' ? 'shop-item selected' : 'shop-item';
-            document.getElementById('i-tank').className = currentShip==='tank' ? 'shop-item selected' : 'shop-item';
-            document.getElementById('cD').innerText = "KREDİ: " + credits;
-        }
+        function selectShip(t) { if(owned.includes(t)) currentShip = t; }
+        function buyShip(t, c) { if(credits >= c && !owned.includes(t)) { credits -= c; owned.push(t); localStorage.setItem('fCredits', credits); selectShip(t); } }
 
         function shoot() {
-            let now = Date.now(), rate = player.r ? 90 : 220;
+            let now = Date.now(), rate = player.r ? 100 : 250;
             if(now - player.lastS < rate) return;
-            const s = sfx.shoot.cloneNode(); s.volume = 0.1; s.play();
+            const s = sfx.shoot.cloneNode(); s.volume = 0.1; s.play().catch(()=>{});
             if(player.m) {
                 bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}, {x:player.x-15, y:player.y-10, vx:-3, vy:-11}, {x:player.x+15, y:player.y-10, vx:3, vy:-11});
             } else { bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}); }
             player.lastS = now;
         }
 
-        function createP(x,y,c,ct=15) { for(let i=0;i<ct;i++) { let a=Math.random()*Math.PI*2, sp=Math.random()*4; particles.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, l:1, c}); } }
-
-        // --- ANA DÖNGÜ ---
         function gameLoop(ts) {
             if(!gameRunning || gamePaused) return;
             let dt = (ts - lastTime) / 1000; lastTime = ts;
@@ -200,8 +171,8 @@
             // Yıldızlar
             stars.forEach(s => { s.y += s.sp; if(s.y > canvas.height) s.y = 0; ctx.fillStyle='#fff'; ctx.fillRect(s.x, s.y, s.s, s.s); });
 
-            // PC Kontrol
-            let speed = currentShip === 'tank' ? 5 : 8;
+            // Hareket
+            let speed = currentShip === 'tank' ? 5 : 9;
             if(keys['w'] || keys['arrowup']) player.y -= speed;
             if(keys['s'] || keys['arrowdown']) player.y += speed;
             if(keys['a'] || keys['arrowleft']) player.x -= speed;
@@ -214,25 +185,27 @@
             ['s','r','m'].forEach(k => {
                 if(player.timers[k] > 0) {
                     player.timers[k] -= dt;
+                    document.getElementById(k+'I').style.opacity = 1;
                     document.getElementById(k+'B').style.opacity = 1;
                     document.getElementById(k+'F').style.width = (player.timers[k]/10*100)+'%';
-                    if(player.timers[k] <= 0) { player[k==='s'?'s':k==='r'?'r':'m'] = false; document.getElementById(k+'B').style.opacity = 0; }
+                    if(player.timers[k] <= 0) { player[k==='s'?'s':k==='r'?'r':'m'] = false; document.getElementById(k+'I').style.opacity = 0.2; document.getElementById(k+'B').style.opacity = 0; }
                 }
             });
 
             // Gemi Çizimi
-            if(player.s) { ctx.beginPath(); ctx.arc(player.x, player.y, 40, 0, Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=3; ctx.stroke(); }
+            if(player.s) { ctx.beginPath(); ctx.arc(player.x, player.y, 42, 0, Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); }
             ctx.fillStyle = currentShip === 'tank' ? '#f0f' : '#0ff';
+            ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
             ctx.beginPath(); ctx.moveTo(player.x, player.y-25); ctx.lineTo(player.x-20, player.y+15); ctx.lineTo(player.x+20, player.y+15); ctx.fill();
+            ctx.shadowBlur = 0;
 
             // Mermiler
             bullets.forEach((b,i) => { b.x += b.vx; b.y += b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2, b.y, 4, 12); if(b.y < 0) bullets.splice(i,1); });
 
-            // Düşman Üretimi
-            if(Math.random() < 0.03 + (level * 0.005)) {
+            // Düşman Spawning
+            if(Math.random() < 0.035 + (level * 0.005)) {
                 let pool = ['drone'];
-                if(level >= 2) pool.push('hunter');
-                if(level >= 3) pool.push('tank');
+                if(level >= 2) pool.push('hunter'); if(level >= 3) pool.push('tank');
                 let t = pool[Math.floor(Math.random()*pool.length)];
                 if(level >= 4 && score % 1000 < 100 && !enemies.some(e=>e.t==='boss') && Math.random() < 0.1) t = 'boss';
                 let d = types[t]; enemies.push({...d, x: Math.random()*canvas.width, y: -60, ch: d.h});
@@ -249,59 +222,43 @@
                 else if(en.t==='tank') ctx.arc(0,0,en.sz/2, 0, Math.PI*2);
                 else if(en.t==='boss') { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*en.sz/2, Math.sin(j/6*Math.PI*2)*en.sz/2); }
                 ctx.fill();
-                // Can Barı
                 ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz, 6);
                 ctx.fillStyle='#0f0'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz*(en.ch/types[en.t].h), 6);
                 ctx.restore();
 
-                // Çarpışma: Gemi
                 if(Math.hypot(player.x-en.x, player.y-en.y) < en.sz/2+25) {
-                    if(!player.s) player.h -= 20;
-                    const bo = sfx.boom.cloneNode(); bo.play(); enemies.splice(i,1);
+                    if(!player.s) player.h -= 25;
+                    sfx.boom.cloneNode().play().catch(()=>{}); enemies.splice(i,1);
                     document.getElementById('hF').style.width = player.h+'%';
-                    if(player.h <= 0) gameOver();
+                    if(player.h <= 0) { gameRunning=false; showMenu('overMenu'); document.getElementById('finalScore').innerText="SKOR: "+score; if(score>bestScore){bestScore=score; localStorage.setItem('fBest', score);} localStorage.setItem('fCredits', credits); }
                 }
-                // Çarpışma: Mermi
                 bullets.forEach((b, bi) => {
                     if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+10) {
                         en.ch--; bullets.splice(bi,1);
                         if(en.ch <= 0) {
-                            const bo = sfx.boom.cloneNode(); bo.play();
-                            score += en.sc; credits += Math.floor(en.sc/10); enemies.splice(i,1);
-                            if(Math.random() < 0.2) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
-                            if(score > level * 700) level++;
+                            sfx.boom.cloneNode().play().catch(()=>{});
+                            score += en.sc; credits += Math.floor(en.sc/5); enemies.splice(i,1);
+                            if(Math.random() < 0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
+                            if(score > level * 800) level++;
                         }
                     }
                 });
                 if(en.y > canvas.height + 100) enemies.splice(i,1);
             });
 
-            // Güçlendirmeler
             powerups.forEach((p, i) => {
                 p.y += 3; ctx.font='25px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
                 if(Math.hypot(player.x-p.x, player.y-p.y) < 40) {
-                    const po = sfx.power.cloneNode(); po.play();
+                    sfx.power.cloneNode().play().catch(()=>{});
                     player[p.t==='s'?'s':p.t==='r'?'r':'m'] = true; player.timers[p.t] = 10;
                     powerups.splice(i,1);
                 }
             });
 
-            // Parçacıklar
-            particles.forEach((p, i) => { p.x+=p.vx; p.y+=p.vy; p.l-=0.02; ctx.globalAlpha=p.l; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,2,2); if(p.l<=0) particles.splice(i,1); });
-            ctx.globalAlpha=1;
-
             document.getElementById('sD').innerText = "SKOR: " + score;
             document.getElementById('cD').innerText = "KREDİ: " + credits;
             document.getElementById('lD').innerText = "LEVEL: " + level;
             requestAnimationFrame(gameLoop);
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            if(score > bestScore) { bestScore = score; localStorage.setItem('fBest', bestScore); }
-            localStorage.setItem('fCredits', credits);
-            document.getElementById('finalScore').innerText = "TOPLAM SKOR: " + score + "\nEN İYİ SKOR: " + bestScore;
-            showMenu('overMenu');
         }
     </script>
 </body>
