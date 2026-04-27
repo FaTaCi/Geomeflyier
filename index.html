@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CYBERPUNK: FaTaCi GAMES V7</title>
+    <title>NEON CYBERPUNK: FaTaCi GAMES V8</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
@@ -11,7 +11,6 @@
         #gameContainer { position: relative; width: 100vw; height: 100vh; background: #050505; }
         canvas { width: 100%; height: 100%; display: block; }
 
-        /* Her Yerde Görünür Coin */
         .coin-ui { 
             position: absolute; top: 20px; right: 20px; 
             background: rgba(0,0,0,0.8); padding: 10px 15px; 
@@ -19,7 +18,6 @@
             color: #ff0; font-weight: bold; z-index: 500;
         }
 
-        /* Menü Tasarımları */
         .menu { 
             position: absolute; top:0; left:0; width:100%; height:100%; 
             background: rgba(0,0,0,0.95); display:none; flex-direction:column; 
@@ -29,22 +27,24 @@
         .glitch { font-size: 50px; animation: glitch 0.3s infinite; text-shadow: 2px 2px #f0f; }
         @keyframes glitch { 0% {transform:translate(0)} 50% {transform:translate(-3px, 2px)} 100% {transform:translate(3px, -2px)} }
 
-        /* Dev Market Çarşısı */
         .market-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 15px; width: 85%; max-height: 60vh; overflow-y: auto; padding: 15px;
-            border: 1px solid #333; margin: 15px 0;
+            gap: 15px; width: 85%; max-height: 45vh; overflow-y: auto; padding: 15px;
+            border: 1px solid #333; margin: 15px 0; pointer-events: auto;
         }
         .market-item {
             border: 1px solid #444; padding: 10px; text-align: center;
-            background: rgba(255,255,255,0.05); cursor: pointer;
+            background: rgba(255,255,255,0.05); cursor: pointer; pointer-events: auto;
         }
         .market-item.owned { border-color: #0f0; }
         .market-item.selected { border: 2px solid #0ff; background: rgba(0,255,255,0.2); }
 
-        .btn { padding: 12px 35px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 10px; }
-        .btn:hover { background: rgba(0,255,255,0.2); }
+        .btn { padding: 12px 35px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 10px; pointer-events: auto; }
         
+        /* PROMO KOD ALANI */
+        .promo-box { margin-top: 10px; display: flex; gap: 5px; pointer-events: auto; }
+        .promo-input { background: #111; border: 1px solid #333; color: #ff0; padding: 5px; font-family: 'Orbitron'; outline: none; }
+
         .game-stats { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 50; }
         .health-bg { width: 150px; height: 10px; border: 1px solid #f0f; margin-top: 5px; }
         #hF { height: 100%; background: #f0f; width: 100%; transition: 0.3s; }
@@ -56,7 +56,7 @@
 
         <div id="splash" onclick="startIntro()">
             <h1 class="glitch">FaTaCi GAMES</h1>
-            <p style="color:#f0f; margin-top: 20px; letter-spacing: 3px;">SİSTEME BAĞLANMAK İÇİN TIKLA</p>
+            <p style="color:#f0f; margin-top: 20px;">SİSTEME BAĞLANMAK İÇİN TIKLA</p>
         </div>
 
         <div class="game-stats" id="uiBox" style="display:none;">
@@ -77,11 +77,15 @@
         <div id="shopMenu" class="menu">
             <h2 style="color:#ff0;">GEMİ KATALOĞU</h2>
             <div class="market-grid" id="marketGrid"></div>
+            <div class="promo-box">
+                <input type="text" id="promoInput" class="promo-input" placeholder="PROMO KODU">
+                <button class="btn" style="padding:5px 15px; margin:0;" onclick="applyPromo()">KULLAN</button>
+            </div>
             <button class="btn" onclick="showMenu('mainMenu')">MENÜYE DÖN</button>
         </div>
 
         <div id="overMenu" class="menu">
-            <h1 style="color:#f00">BAĞLANTI KESİLDİ</h1>
+            <h1 style="color:#f00">GÖREV BAŞARISIZ</h1>
             <div id="resTxt" style="margin:20px; text-align:center;"></div>
             <button class="btn" onclick="location.reload()">RETRY</button>
         </div>
@@ -90,7 +94,7 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let gameRunning = false, score = 0, level = 1, lastTime = 0;
+        let gameRunning = false, score = 0, level = 1, lastTime = 0, isCheatActive = false;
         
         let credits = parseInt(localStorage.getItem('fCr')) || 0;
         let bestS = parseInt(localStorage.getItem('fBs')) || 0;
@@ -131,8 +135,13 @@
         }
         window.addEventListener('resize', resize); resize();
 
-        function updateCoinUI() {
-            document.getElementById('coinWallet').innerText = "🪙 " + credits + " CR";
+        function applyPromo() {
+            const val = document.getElementById('promoInput').value;
+            if(val === '241700ftc') {
+                isCheatActive = true;
+                alert("ÜRETİCİ MODU AKTİF: TÜM GEMİLER ÜCRETSİZ!");
+                renderMarket();
+            } else { alert("GEÇERSİZ KOD!"); }
         }
 
         function startIntro() {
@@ -144,7 +153,6 @@
             }, 500);
         }
 
-        // ATEŞ ETME (SPACE VE TIKLAMA)
         function shoot() {
             if(!gameRunning) return;
             let now = Date.now();
@@ -186,10 +194,11 @@
                 const s = ships[k];
                 const isO = owned.includes(k);
                 const isS = currentShip === k;
+                const costDisplay = isCheatActive ? "0 CR" : s.cost + " CR";
                 grid.innerHTML += `
                     <div class="market-item ${isO ? 'owned' : ''} ${isS ? 'selected' : ''}" onclick="handleBuy('${k}')">
                         <div style="color:${s.c}; font-size:12px; font-weight:900;">${s.name}</div>
-                        <div style="color:#ff0; font-size:10px; margin-top:5px;">${isO ? (isS ? 'AKTİF' : 'SEÇ') : s.cost + ' CR'}</div>
+                        <div style="color:#ff0; font-size:10px; margin-top:5px;">${isO ? (isS ? 'AKTİF' : 'SEÇ') : costDisplay}</div>
                     </div>
                 `;
             }
@@ -197,11 +206,12 @@
 
         function handleBuy(k) {
             const s = ships[k];
+            const finalCost = isCheatActive ? 0 : s.cost;
             if(owned.includes(k)) {
                 currentShip = k;
                 localStorage.setItem('fCu', k);
-            } else if(credits >= s.cost) {
-                credits -= s.cost;
+            } else if(credits >= finalCost) {
+                credits -= finalCost;
                 owned.push(k);
                 currentShip = k;
                 localStorage.setItem('fCr', credits);
@@ -211,6 +221,8 @@
             renderMarket();
             updateCoinUI();
         }
+
+        function updateCoinUI() { document.getElementById('coinWallet').innerText = "🪙 " + credits + " CR"; }
 
         function startGame() {
             showMenu('none');
@@ -230,54 +242,56 @@
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
             stars.forEach(st => { st.y += st.sp; if(st.y > canvas.height) st.y = 0; ctx.fillStyle='#fff'; ctx.fillRect(st.x, st.y, st.s, st.s); });
 
-            // PC Hareket
             let sInfo = ships[currentShip];
             if(keys['w'] || keys['arrowup']) player.y -= sInfo.s;
             if(keys['s'] || keys['arrowdown']) player.y += sInfo.s;
             if(keys['a'] || keys['arrowleft']) player.x -= sInfo.s;
             if(keys['d'] || keys['arrowright']) player.x += sInfo.s;
-            if(keys[' ']) shoot();
             
             player.x = Math.max(20, Math.min(canvas.width-20, player.x));
             player.y = Math.max(20, Math.min(canvas.height-20, player.y));
 
-            // JET ÇİZİMİ (KESİN GÖRÜNÜRLÜK)
+            // JET ÇİZİMİ
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.fillStyle = sInfo.c;
             ctx.shadowBlur = 20; ctx.shadowColor = sInfo.c;
-            ctx.beginPath();
-            ctx.moveTo(0, -25); ctx.lineTo(-20, 15); ctx.lineTo(20, 15);
-            ctx.fill();
+            ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-20, 15); ctx.lineTo(20, 15); ctx.fill();
             ctx.restore();
 
-            // Mermiler
             for(let i=bullets.length-1; i>=0; i--){
                 bullets[i].y -= 12;
                 ctx.fillStyle='#fff'; ctx.fillRect(bullets[i].x-2, bullets[i].y, 4, 15);
                 if(bullets[i].y < -20) bullets.splice(i,1);
             }
 
-            // Düşmanlar
             if(Math.random() < 0.045 + (level*0.005)){
                 let tArr = Object.keys(eTypes);
                 let t = tArr[Math.floor(Math.random()*(level > 3 ? 4 : 2))];
                 let d = eTypes[t];
-                enemies.push({...d, x: Math.random()*canvas.width, y:-60, ch: d.h, t: t});
+                enemies.push({...d, x: Math.random()*canvas.width, y:-60, ch: d.h, type: t});
             }
 
             for(let i=enemies.length-1; i>=0; i--){
                 let en = enemies[i]; en.y += en.s;
+                ctx.save();
+                ctx.translate(en.x, en.y);
                 ctx.fillStyle = en.c;
-                ctx.beginPath(); ctx.arc(en.x, en.y, en.sz/2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath();
+                // ŞEKİLLİ DÜŞMANLAR
+                if(en.type === 'd') { ctx.moveTo(0, -11); ctx.lineTo(11, 11); ctx.lineTo(-11, 11); } // Drone (Üçgen)
+                else if(en.type === 'h') { ctx.rect(-12, -12, 24, 24); } // Hunter (Kare)
+                else if(en.type === 't') { ctx.arc(0, 0, 15, 0, Math.PI*2); } // Tank (Daire)
+                else { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*35, Math.sin(j/6*Math.PI*2)*35); } // Boss (Altıgen)
+                ctx.fill();
+                ctx.restore();
 
-                // Çarpışma
                 if(Math.hypot(player.x-en.x, player.y-en.y) < en.sz/2+22){
                     player.h -= 20; sfx.boom.cloneNode().play().catch(()=>{}); enemies.splice(i,1);
                     document.getElementById('hF').style.width = (player.h/sInfo.hp*100)+'%';
                     if(player.h <= 0) {
                         gameRunning = false; showMenu('overMenu');
-                        document.getElementById('resTxt').innerHTML = "SKOR: "+score+"<br>KAZANILAN: "+Math.floor(score/4)+" CR";
+                        document.getElementById('resTxt').innerHTML = "SKOR: "+score;
                         credits += Math.floor(score/4); localStorage.setItem('fCr', credits);
                         if(score > bestS) { bestS = score; localStorage.setItem('fBs', score); }
                     }
@@ -289,8 +303,7 @@
                         en.ch--; bullets.splice(bi,1);
                         if(en.ch <= 0){
                             score += en.sc; sfx.boom.cloneNode().play().catch(()=>{});
-                            enemies.splice(i,1);
-                            if(score > level*1000) level++;
+                            enemies.splice(i,1); if(score > level*1000) level++;
                         }
                     }
                 });
