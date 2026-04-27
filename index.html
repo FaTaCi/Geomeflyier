@@ -12,14 +12,12 @@
         canvas { width: 100%; height: 100%; display: block; }
         .ui { position: absolute; pointer-events: none; text-shadow: 0 0 10px #0ff; z-index: 10; }
         
-        /* GİRİŞ EKRANI */
         #splash { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: 1s; cursor: pointer; }
         .glitch { font-size: 50px; animation: glitch-anim 0.3s infinite; text-shadow: 2px 2px #f0f; text-align: center; }
         @keyframes glitch-anim { 0% {transform:translate(0)} 50% {transform:translate(-3px, 2px)} 100% {transform:translate(3px, -2px)} }
 
-        /* MENÜLER */
         .menu { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:100; pointer-events: auto; }
-        .btn { padding: 12px 30px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 8px; transition: 0.3s; width: 220px; text-align: center; }
+        .btn { padding: 12px 30px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 8px; width: 220px; text-align: center; }
         .btn:hover { background:rgba(0,255,255,0.2); box-shadow: 0 0 15px #0ff; }
         
         .p-indicators { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; }
@@ -31,7 +29,7 @@
     <div id="gameContainer">
         <div id="splash" onclick="startIntro()">
             <h1 class="glitch">FaTaCi GAMES</h1>
-            <p id="splashTxt" style="color:#f0f; margin-top: 20px;">SİSTEMİ BAŞLATMAK İÇİN TIKLA</p>
+            <p id="splashTxt" style="color:#f0f; margin-top: 20px;">BAŞLATMAK İÇİN TIKLA</p>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -53,7 +51,7 @@
         </div>
 
         <div id="mainMenu" class="menu">
-            <h1 style="margin-bottom:20px;">NEON RUNNER</h1>
+            <h1>NEON RUNNER</h1>
             <button class="btn" onclick="startGame()">GÖREVE BAŞLA</button>
             <button class="btn" onclick="showMenu('shopMenu')">MARKET</button>
             <div style="margin-top:20px; color:#ff0;">EN YÜKSEK SKOR: <span id="bestS">0</span></div>
@@ -91,7 +89,6 @@
         let currentShip = 'neon';
         const keys = {};
 
-        // GÜVENLİ SES OYNATICI
         const sfx = {
             intro: new Audio('sesler/giris-efekti.mp3'),
             bgm: new Audio('sesler/muzik.mp3'),
@@ -100,14 +97,6 @@
             power: new Audio('sesler/ozel-guc.wav')
         };
         sfx.bgm.loop = true; sfx.bgm.volume = 0.15;
-
-        function safePlay(sound) {
-            if (sound && sound.readyState >= 2) {
-                const clone = sound.cloneNode();
-                clone.volume = sound.volume;
-                clone.play().catch(() => {});
-            }
-        }
 
         const player = { x: 0, y: 0, h: 100, s: false, r: false, m: false, timers: {s:0, r:0, m:0}, lastS: 0 };
         let enemies = [], bullets = [], stars = [], powerups = [];
@@ -125,10 +114,9 @@
         }
         window.addEventListener('resize', resize); resize();
 
-        // GİRİŞ SIRASI
         function startIntro() {
+            try { sfx.intro.play(); } catch(e){}
             document.getElementById('splashTxt').innerText = "SİSTEM YÜKLENİYOR...";
-            sfx.intro.play().catch(() => {});
             setTimeout(() => {
                 document.getElementById('splash').style.opacity = '0';
                 setTimeout(() => {
@@ -139,7 +127,10 @@
             }, 2000);
         }
 
-        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='p' && gameRunning) togglePause(); });
+        window.addEventListener('keydown', e => { 
+            keys[e.key.toLowerCase()] = true; 
+            if(e.key.toLowerCase()==='p' && gameRunning) togglePause(); 
+        });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
         
         let isT = false, tX = 0, tY = 0;
@@ -158,7 +149,7 @@
 
         function startGame() {
             showMenu('none'); gameRunning = true; 
-            sfx.bgm.play().catch(() => {});
+            try { sfx.bgm.play(); } catch(e){}
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
         }
@@ -175,7 +166,7 @@
         function shoot() {
             let now = Date.now(), rate = player.r ? 100 : 250;
             if(now - player.lastS < rate) return;
-            safePlay(sfx.shoot);
+            try { let s = sfx.shoot.cloneNode(); s.volume = 0.1; s.play(); } catch(e){}
             if(player.m) {
                 bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}, {x:player.x-15, y:player.y-10, vx:-3, vy:-11}, {x:player.x+15, y:player.y-10, vx:3, vy:-11});
             } else { bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}); }
@@ -185,7 +176,7 @@
         function gameLoop(ts) {
             if(!gameRunning || gamePaused) return;
             let dt = (ts - lastTime) / 1000; 
-            if (dt > 0.1) dt = 0.016;
+            if (dt > 0.1 || dt <= 0) dt = 0.016;
             lastTime = ts;
 
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
@@ -218,7 +209,8 @@
 
             bullets.forEach((b,i) => { b.x += b.vx; b.y += b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2, b.y, 4, 12); if(b.y < 0) bullets.splice(i,1); });
 
-            if(Math.random() < 0.03 + (level * 0.005)) {
+            // Düşman Spawning
+            if(Math.random() < 0.035 + (level * 0.005)) {
                 let pool = ['drone'];
                 if(level >= 2) pool.push('hunter'); if(level >= 3) pool.push('tank');
                 let t = pool[Math.floor(Math.random()*pool.length)];
@@ -227,32 +219,40 @@
                 if(d) enemies.push({...d, x: Math.random()*canvas.width, y: -60, ch: d.h});
             }
 
+            // Düşman Döngüsü (HATA BURADA ÇÖZÜLDÜ)
             enemies.forEach((en, i) => {
-                if(!en) return;
+                if(!en || !types[en.t]) return;
                 en.y += en.s;
                 ctx.save(); ctx.translate(en.x, en.y);
                 ctx.fillStyle = en.c;
                 ctx.beginPath();
-                if(en.t==='drone') { ctx.moveTo(0,-en.sz/2); ctx.lineTo(en.sz/2,en.sz/2); ctx.lineTo(-en.sz/2,en.sz/2); }
-                else if(en.t==='hunter') ctx.rect(-en.sz/2, -en.sz/2, en.sz, en.sz);
-                else if(en.t==='tank') ctx.arc(0,0,en.sz/2, 0, Math.PI*2);
-                else if(en.t==='boss') { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*en.sz/2, Math.sin(j/6*Math.PI*2)*en.sz/2); }
+                let sz = en.sz || 20;
+                if(en.t==='drone') { ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,sz/2); ctx.lineTo(-sz/2,sz/2); }
+                else if(en.t==='hunter') ctx.rect(-sz/2, -sz/2, sz, sz);
+                else if(en.t==='tank') ctx.arc(0,0,sz/2, 0, Math.PI*2);
+                else if(en.t==='boss') { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*sz/2, Math.sin(j/6*Math.PI*2)*sz/2); }
                 ctx.fill();
-                ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz, 6);
-                ctx.fillStyle='#0f0'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz*(en.ch/types[en.t].h), 6);
+                
+                // Can Barı
+                ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(-sz/2, -sz/2-15, sz, 6);
+                ctx.fillStyle='#0f0'; 
+                let healthRatio = en.ch / (types[en.t].h || 1);
+                ctx.fillRect(-sz/2, -sz/2-15, sz * healthRatio, 6);
                 ctx.restore();
 
-                if(Math.hypot(player.x-en.x, player.y-en.y) < (en.sz || 20)/2+25) {
+                // Çarpışma
+                if(Math.hypot(player.x-en.x, player.y-en.y) < sz/2+25) {
                     if(!player.s) player.h -= 25;
-                    safePlay(sfx.boom); enemies.splice(i,1);
+                    try { sfx.boom.cloneNode().play(); } catch(e){}
+                    enemies.splice(i,1);
                     document.getElementById('hF').style.width = player.h+'%';
-                    if(player.h <= 0) { gameRunning=false; showMenu('overMenu'); document.getElementById('finalScore').innerText="SKOR: "+score; if(score>bestScore){bestScore=score; localStorage.setItem('fBest', score);} localStorage.setItem('fCredits', credits); }
+                    if(player.h <= 0) gameOver();
                 }
                 bullets.forEach((b, bi) => {
-                    if(en && Math.hypot(b.x-en.x, b.y-en.y) < (en.sz || 20)/2+10) {
+                    if(en && Math.hypot(b.x-en.x, b.y-en.y) < sz/2+10) {
                         en.ch--; bullets.splice(bi,1);
                         if(en.ch <= 0) {
-                            safePlay(sfx.boom);
+                            try { sfx.boom.cloneNode().play(); } catch(e){}
                             score += en.sc; credits += Math.floor(en.sc/5); enemies.splice(i,1);
                             if(Math.random() < 0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
                             if(score > level * 800) level++;
@@ -265,7 +265,7 @@
             powerups.forEach((p, i) => {
                 p.y += 3; ctx.font='25px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
                 if(Math.hypot(player.x-p.x, player.y-p.y) < 40) {
-                    safePlay(sfx.power);
+                    try { sfx.power.cloneNode().play(); } catch(e){}
                     player[p.t==='s'?'s':p.t==='r'?'r':'m'] = true; player.timers[p.t] = 10;
                     powerups.splice(i,1);
                 }
@@ -275,6 +275,14 @@
             document.getElementById('cD').innerText = "KREDİ: " + credits;
             document.getElementById('lD').innerText = "LEVEL: " + level;
             requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            if(score > bestScore) { bestScore = score; localStorage.setItem('fBest', bestScore); }
+            localStorage.setItem('fCredits', credits);
+            document.getElementById('finalScore').innerText = "TOPLAM SKOR: " + score + "\nEN İYİ REKOR: " + bestScore;
+            showMenu('overMenu');
         }
     </script>
 </body>
