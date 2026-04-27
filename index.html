@@ -7,19 +7,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
-        body { background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; color: #0ff; }
+        body { background: #000; overflow: hidden; font-family: 'Orbitron', sans-serif; color: #0ff; height: 100vh; }
         #gameContainer { position: relative; width: 100vw; height: 100vh; background: #050505; }
         canvas { width: 100%; height: 100%; display: block; }
         .ui { position: absolute; pointer-events: none; text-shadow: 0 0 10px #0ff; z-index: 10; }
         
         /* GİRİŞ EKRANI */
-        #splash { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: 1s; }
-        .glitch { font-size: 50px; animation: glitch-anim 0.3s infinite; text-shadow: 2px 2px #f0f; }
+        #splash { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; transition: 1s; cursor: pointer; }
+        .glitch { font-size: 50px; animation: glitch-anim 0.3s infinite; text-shadow: 2px 2px #f0f; text-align: center; }
         @keyframes glitch-anim { 0% {transform:translate(0)} 50% {transform:translate(-3px, 2px)} 100% {transform:translate(3px, -2px)} }
 
         /* MENÜLER */
-        .menu { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:100; pointer-events: auto; }
-        .btn { padding: 12px 30px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 8px; transition: 0.3s; width: 220px; }
+        .menu { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:100; pointer-events: auto; }
+        .btn { padding: 12px 30px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 8px; transition: 0.3s; width: 220px; text-align: center; }
         .btn:hover { background:rgba(0,255,255,0.2); box-shadow: 0 0 15px #0ff; }
         
         .p-indicators { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; }
@@ -29,10 +29,14 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="splash"><h1 class="glitch">FaTaCi GAMES</h1><p style="color:#f0f">SYSTEM LOADING...</p></div>
+        <div id="splash" onclick="startIntro()">
+            <h1 class="glitch">FaTaCi GAMES</h1>
+            <p id="splashTxt" style="color:#f0f; margin-top: 20px;">SİSTEMİ BAŞLATMAK İÇİN TIKLA</p>
+        </div>
+
         <canvas id="gameCanvas"></canvas>
         
-        <div class="ui" style="top:20px; left:20px; display:flex; flex-direction:column; gap:5px; pointer-events:none;">
+        <div class="ui" style="top:20px; left:20px; display:flex; flex-direction:column; gap:5px;">
             <div id="sD">SKOR: 0</div>
             <div id="cD" style="color:#ff0">KREDİ: 0</div>
             <div id="lD" style="color:#0f0; font-size:12px;">LEVEL: 1</div>
@@ -48,7 +52,7 @@
             <div id="mI" style="opacity:0.2">🔥<div class="p-bar" id="mB"><div id="mF" class="p-fill" style="background:#ff0"></div></div></div>
         </div>
 
-        <div id="mainMenu" class="menu" style="display:flex;">
+        <div id="mainMenu" class="menu">
             <h1 style="margin-bottom:20px;">NEON RUNNER</h1>
             <button class="btn" onclick="startGame()">GÖREVE BAŞLA</button>
             <button class="btn" onclick="showMenu('shopMenu')">MARKET</button>
@@ -59,7 +63,7 @@
             <h1>CYBER MARKET</h1>
             <div style="display:flex; gap:10px; margin:20px;">
                 <div id="i-neon" style="border:1px solid #0ff; padding:10px; cursor:pointer;" onclick="selectShip('neon')">NEON RUNNER</div>
-                <div id="i-tank" style="border:1px solid #f0f; padding:10px; cursor:pointer;" onclick="buyShip('tank', 5000)">TITAN TANK (5000)</div>
+                <div id="i-tank" style="border:1px solid #f0f; padding:10px; cursor:pointer;" onclick="buyShip('tank', 5000)">TITAN TANK</div>
             </div>
             <button class="btn" onclick="showMenu('mainMenu')">GERİ</button>
         </div>
@@ -71,7 +75,7 @@
         </div>
 
         <div id="overMenu" class="menu">
-            <h1 style="color:#f00">BAĞLANTI KESİLDİ</h1>
+            <h1 style="color:#f00">GÖREV BAŞARISIZ</h1>
             <div id="finalScore" style="margin:20px;"></div>
             <button class="btn" onclick="location.reload()">RETRY</button>
         </div>
@@ -87,6 +91,7 @@
         let currentShip = 'neon';
         const keys = {};
 
+        // GÜVENLİ SES OYNATICI
         const sfx = {
             intro: new Audio('sesler/giris-efekti.mp3'),
             bgm: new Audio('sesler/muzik.mp3'),
@@ -96,22 +101,21 @@
         };
         sfx.bgm.loop = true; sfx.bgm.volume = 0.15;
 
+        function safePlay(sound) {
+            if (sound && sound.readyState >= 2) {
+                const clone = sound.cloneNode();
+                clone.volume = sound.volume;
+                clone.play().catch(() => {});
+            }
+        }
+
         const player = { x: 0, y: 0, h: 100, s: false, r: false, m: false, timers: {s:0, r:0, m:0}, lastS: 0 };
-        let enemies = [], bullets = [], particles = [], powerups = [], stars = [];
+        let enemies = [], bullets = [], stars = [], powerups = [];
         const types = { 
             drone: {c:'#ff0040', h:1, s:3, sc:10, sz:22}, 
             hunter: {c:'#ff6600', h:3, s:4, sc:25, sz:28}, 
             tank: {c:'#f0f', h:10, s:2, sc:60, sz:38}, 
             boss: {c:'#0ff', h:50, s:1, sc:500, sz:75} 
-        };
-
-        window.onload = () => {
-            try { sfx.intro.play(); } catch(e) {}
-            document.getElementById('bestS').innerText = bestScore;
-            setTimeout(() => {
-                document.getElementById('splash').style.opacity = '0';
-                setTimeout(() => document.getElementById('splash').style.display = 'none', 1000);
-            }, 3000);
         };
 
         function resize() {
@@ -121,10 +125,21 @@
         }
         window.addEventListener('resize', resize); resize();
 
-        window.addEventListener('keydown', e => { 
-            keys[e.key.toLowerCase()] = true; 
-            if(e.key.toLowerCase()==='p' && gameRunning) togglePause(); 
-        });
+        // GİRİŞ SIRASI
+        function startIntro() {
+            document.getElementById('splashTxt').innerText = "SİSTEM YÜKLENİYOR...";
+            sfx.intro.play().catch(() => {});
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('splash').style.display = 'none';
+                    showMenu('mainMenu');
+                    document.getElementById('bestS').innerText = bestScore;
+                }, 1000);
+            }, 2000);
+        }
+
+        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='p' && gameRunning) togglePause(); });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
         
         let isT = false, tX = 0, tY = 0;
@@ -142,20 +157,16 @@
         }
 
         function startGame() {
-            showMenu('none'); 
-            gameRunning = true; 
-            try { sfx.bgm.play(); } catch(e) {}
-            lastTime = 0; // Zamanlayıcıyı sıfırla
+            showMenu('none'); gameRunning = true; 
+            sfx.bgm.play().catch(() => {});
+            lastTime = performance.now();
             requestAnimationFrame(gameLoop);
         }
 
         function togglePause() {
             gamePaused = !gamePaused;
             document.getElementById('pauseMenu').style.display = gamePaused ? 'flex' : 'none';
-            if(!gamePaused) {
-                lastTime = 0; // Unpause olduğunda zamanlayıcıyı tazele
-                requestAnimationFrame(gameLoop);
-            }
+            if(!gamePaused) { lastTime = performance.now(); requestAnimationFrame(gameLoop); }
         }
 
         function selectShip(t) { if(owned.includes(t)) currentShip = t; }
@@ -164,11 +175,7 @@
         function shoot() {
             let now = Date.now(), rate = player.r ? 100 : 250;
             if(now - player.lastS < rate) return;
-            try { 
-                const s = sfx.shoot.cloneNode(); 
-                s.volume = 0.1; 
-                s.play(); 
-            } catch(e) {}
+            safePlay(sfx.shoot);
             if(player.m) {
                 bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}, {x:player.x-15, y:player.y-10, vx:-3, vy:-11}, {x:player.x+15, y:player.y-10, vx:3, vy:-11});
             } else { bullets.push({x:player.x, y:player.y-20, vx:0, vy:-12}); }
@@ -177,19 +184,13 @@
 
         function gameLoop(ts) {
             if(!gameRunning || gamePaused) return;
-            
-            // DONMAYI ÖNLEYEN KRİTİK ZAMANLAYICI MANTIĞI
-            if (!lastTime) lastTime = ts;
-            let dt = (ts - lastTime) / 1000;
-            if (dt > 0.1) dt = 0.1; // Sıçramaları önle
+            let dt = (ts - lastTime) / 1000; 
+            if (dt > 0.1) dt = 0.016;
             lastTime = ts;
 
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
-
-            // Yıldızlar
             stars.forEach(s => { s.y += s.sp; if(s.y > canvas.height) s.y = 0; ctx.fillStyle='#fff'; ctx.fillRect(s.x, s.y, s.s, s.s); });
 
-            // Hareket
             let speed = currentShip === 'tank' ? 6 : 10;
             if(keys['w'] || keys['arrowup']) player.y -= speed;
             if(keys['s'] || keys['arrowdown']) player.y += speed;
@@ -206,40 +207,28 @@
                     document.getElementById(k+'I').style.opacity = 1;
                     document.getElementById(k+'B').style.opacity = 1;
                     document.getElementById(k+'F').style.width = (player.timers[k]/10*100)+'%';
-                    if(player.timers[k] <= 0) { 
-                        player[k==='s'?'s':k==='r'?'r':'m'] = false; 
-                        document.getElementById(k+'I').style.opacity = 0.2; 
-                        document.getElementById(k+'B').style.opacity = 0; 
-                    }
+                    if(player.timers[k] <= 0) { player[k==='s'?'s':k==='r'?'r':'m'] = false; document.getElementById(k+'I').style.opacity = 0.2; document.getElementById(k+'B').style.opacity = 0; }
                 }
             });
 
-            // Gemi Çizimi
-            if(player.s) { 
-                ctx.beginPath(); ctx.arc(player.x, player.y, 42, 0, Math.PI*2); 
-                ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); 
-            }
+            // Gemi
+            if(player.s) { ctx.beginPath(); ctx.arc(player.x, player.y, 42, 0, Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); }
             ctx.fillStyle = currentShip === 'tank' ? '#f0f' : '#0ff';
             ctx.beginPath(); ctx.moveTo(player.x, player.y-25); ctx.lineTo(player.x-20, player.y+15); ctx.lineTo(player.x+20, player.y+15); ctx.fill();
 
-            // Mermiler
-            bullets.forEach((b,i) => { 
-                b.x += b.vx; b.y += b.vy; 
-                ctx.fillStyle='#fff'; ctx.fillRect(b.x-2, b.y, 4, 12); 
-                if(b.y < 0) bullets.splice(i,1); 
-            });
+            bullets.forEach((b,i) => { b.x += b.vx; b.y += b.vy; ctx.fillStyle='#fff'; ctx.fillRect(b.x-2, b.y, 4, 12); if(b.y < 0) bullets.splice(i,1); });
 
-            // Düşman Üretimi
-            if(Math.random() < 0.035 + (level * 0.005)) {
+            if(Math.random() < 0.03 + (level * 0.005)) {
                 let pool = ['drone'];
                 if(level >= 2) pool.push('hunter'); if(level >= 3) pool.push('tank');
                 let t = pool[Math.floor(Math.random()*pool.length)];
                 if(level >= 4 && score % 1000 < 100 && !enemies.some(e=>e.t==='boss') && Math.random() < 0.1) t = 'boss';
-                let d = types[t]; enemies.push({...d, x: Math.random()*canvas.width, y: -60, ch: d.h});
+                let d = types[t]; 
+                if(d) enemies.push({...d, x: Math.random()*canvas.width, y: -60, ch: d.h});
             }
 
-            // Düşman Mantığı
             enemies.forEach((en, i) => {
+                if(!en) return;
                 en.y += en.s;
                 ctx.save(); ctx.translate(en.x, en.y);
                 ctx.fillStyle = en.c;
@@ -253,40 +242,30 @@
                 ctx.fillStyle='#0f0'; ctx.fillRect(-en.sz/2, -en.sz/2-15, en.sz*(en.ch/types[en.t].h), 6);
                 ctx.restore();
 
-                // Çarpışma: Gemi
-                if(Math.hypot(player.x-en.x, player.y-en.y) < en.sz/2+25) {
+                if(Math.hypot(player.x-en.x, player.y-en.y) < (en.sz || 20)/2+25) {
                     if(!player.s) player.h -= 25;
-                    try { sfx.boom.cloneNode().play(); } catch(e) {}
-                    enemies.splice(i,1);
+                    safePlay(sfx.boom); enemies.splice(i,1);
                     document.getElementById('hF').style.width = player.h+'%';
-                    if(player.h <= 0) { 
-                        gameRunning=false; 
-                        showMenu('overMenu'); 
-                        document.getElementById('finalScore').innerText="SKOR: "+score; 
-                        if(score>bestScore){bestScore=score; localStorage.setItem('fBest', score);} 
-                        localStorage.setItem('fCredits', credits); 
-                    }
+                    if(player.h <= 0) { gameRunning=false; showMenu('overMenu'); document.getElementById('finalScore').innerText="SKOR: "+score; if(score>bestScore){bestScore=score; localStorage.setItem('fBest', score);} localStorage.setItem('fCredits', credits); }
                 }
-                // Çarpışma: Mermi
                 bullets.forEach((b, bi) => {
-                    if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+10) {
+                    if(en && Math.hypot(b.x-en.x, b.y-en.y) < (en.sz || 20)/2+10) {
                         en.ch--; bullets.splice(bi,1);
                         if(en.ch <= 0) {
-                            try { sfx.boom.cloneNode().play(); } catch(e) {}
+                            safePlay(sfx.boom);
                             score += en.sc; credits += Math.floor(en.sc/5); enemies.splice(i,1);
                             if(Math.random() < 0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
                             if(score > level * 800) level++;
                         }
                     }
                 });
-                if(en.y > canvas.height + 100) enemies.splice(i,1);
+                if(en && en.y > canvas.height + 100) enemies.splice(i,1);
             });
 
-            // Güçlendirmeler
             powerups.forEach((p, i) => {
                 p.y += 3; ctx.font='25px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
                 if(Math.hypot(player.x-p.x, player.y-p.y) < 40) {
-                    try { sfx.power.cloneNode().play(); } catch(e) {}
+                    safePlay(sfx.power);
                     player[p.t==='s'?'s':p.t==='r'?'r':'m'] = true; player.timers[p.t] = 10;
                     powerups.splice(i,1);
                 }
@@ -295,8 +274,6 @@
             document.getElementById('sD').innerText = "SKOR: " + score;
             document.getElementById('cD').innerText = "KREDİ: " + credits;
             document.getElementById('lD').innerText = "LEVEL: " + level;
-            
-            // DÖNGÜYÜ DEVAM ETTİR
             requestAnimationFrame(gameLoop);
         }
     </script>
