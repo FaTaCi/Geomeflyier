@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CYBERPUNK: FaTaCi GAMES V8</title>
+    <title>NEON CYBERPUNK: FaTaCi GAMES V9</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
@@ -11,6 +11,7 @@
         #gameContainer { position: relative; width: 100vw; height: 100vh; background: #050505; }
         canvas { width: 100%; height: 100%; display: block; }
 
+        /* Her Yerde Coin UI */
         .coin-ui { 
             position: absolute; top: 20px; right: 20px; 
             background: rgba(0,0,0,0.8); padding: 10px 15px; 
@@ -18,35 +19,30 @@
             color: #ff0; font-weight: bold; z-index: 500;
         }
 
-        .menu { 
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.95); display:none; flex-direction:column; 
-            justify-content:center; align-items:center; z-index:100;
-        }
+        /* Güç Barı Göstergeleri */
+        .p-indicators { position: absolute; bottom: 30px; left: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 50; }
+        .p-unit { display: flex; align-items: center; gap: 10px; opacity: 0.3; transition: 0.3s; }
+        .p-unit.active { opacity: 1; }
+        .p-bar-bg { width: 100px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .p-fill { height: 100%; width: 0%; transition: 0.1s linear; }
+
+        /* Menüler */
+        .menu { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
         #splash { position: fixed; background:#000; z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%; height:100%; cursor: pointer; }
-        .glitch { font-size: 50px; animation: glitch 0.3s infinite; text-shadow: 2px 2px #f0f; }
+        .glitch { font-size: 45px; animation: glitch 0.3s infinite; text-shadow: 2px 2px #f0f; }
         @keyframes glitch { 0% {transform:translate(0)} 50% {transform:translate(-3px, 2px)} 100% {transform:translate(3px, -2px)} }
 
-        .market-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 15px; width: 85%; max-height: 45vh; overflow-y: auto; padding: 15px;
-            border: 1px solid #333; margin: 15px 0; pointer-events: auto;
-        }
-        .market-item {
-            border: 1px solid #444; padding: 10px; text-align: center;
-            background: rgba(255,255,255,0.05); cursor: pointer; pointer-events: auto;
-        }
+        .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; width: 85%; max-height: 40vh; overflow-y: auto; padding: 15px; border: 1px solid #333; margin: 15px 0; pointer-events: auto; }
+        .market-item { border: 1px solid #444; padding: 10px; text-align: center; background: rgba(255,255,255,0.05); cursor: pointer; pointer-events: auto; }
         .market-item.owned { border-color: #0f0; }
         .market-item.selected { border: 2px solid #0ff; background: rgba(0,255,255,0.2); }
 
         .btn { padding: 12px 35px; border: 2px solid #0ff; background:transparent; color:#0ff; font-family:'Orbitron'; font-weight:bold; cursor:pointer; margin: 10px; pointer-events: auto; }
-        
-        /* PROMO KOD ALANI */
         .promo-box { margin-top: 10px; display: flex; gap: 5px; pointer-events: auto; }
-        .promo-input { background: #111; border: 1px solid #333; color: #ff0; padding: 5px; font-family: 'Orbitron'; outline: none; }
+        .promo-input { background: #111; border: 1px solid #333; color: #ff0; padding: 8px; font-family: 'Orbitron'; outline: none; }
 
         .game-stats { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 50; }
-        .health-bg { width: 150px; height: 10px; border: 1px solid #f0f; margin-top: 5px; }
+        .health-bg { width: 150px; height: 12px; border: 1px solid #f0f; margin-top: 5px; }
         #hF { height: 100%; background: #f0f; width: 100%; transition: 0.3s; }
     </style>
 </head>
@@ -63,6 +59,12 @@
             <div id="sTxt">SKOR: 0</div>
             <div style="font-size:12px; color:#0f0;">LEVEL: <span id="lTxt">1</span></div>
             <div class="health-bg"><div id="hF"></div></div>
+        </div>
+
+        <div class="p-indicators" id="pUI" style="display:none;">
+            <div id="sUnit" class="p-unit">🛡️ <div class="p-bar-bg"><div id="sFill" class="p-fill" style="background:#0f0"></div></div></div>
+            <div id="rUnit" class="p-unit">⚡ <div class="p-bar-bg"><div id="rFill" class="p-fill" style="background:#f0f"></div></div></div>
+            <div id="mUnit" class="p-unit">🔥 <div class="p-bar-bg"><div id="mFill" class="p-fill" style="background:#ff0"></div></div></div>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -85,7 +87,7 @@
         </div>
 
         <div id="overMenu" class="menu">
-            <h1 style="color:#f00">GÖREV BAŞARISIZ</h1>
+            <h1 style="color:#f00">BAĞLANTI KESİLDİ</h1>
             <div id="resTxt" style="margin:20px; text-align:center;"></div>
             <button class="btn" onclick="location.reload()">RETRY</button>
         </div>
@@ -104,6 +106,7 @@
         const sfx = {
             shoot: new Audio('sesler/ates.wav'),
             boom: new Audio('sesler/patlama.wav'),
+            power: new Audio('sesler/ozel-guc.wav'),
             bgm: new Audio('sesler/muzik.mp3')
         };
         sfx.bgm.loop = true; sfx.bgm.volume = 0.2;
@@ -112,15 +115,12 @@
             neon: { name: "NEON", cost: 0, s: 10, hp: 100, c: "#0ff" },
             tank: { name: "TITAN", cost: 5000, s: 6, hp: 250, c: "#f0f" },
             phantom: { name: "GHOST", cost: 12000, s: 15, hp: 80, c: "#ff0" },
-            crimson: { name: "VALKYRIE", cost: 20000, s: 12, hp: 140, c: "#f00" },
             emerald: { name: "ZÜMRÜT", cost: 35000, s: 11, hp: 200, c: "#0f0" },
-            void: { name: "VOID", cost: 50000, s: 9, hp: 350, c: "#fff" },
-            ruby: { name: "YAKUT", cost: 75000, s: 14, hp: 180, c: "#e0115f" },
             golden: { name: "GOLDEN", cost: 150000, s: 16, hp: 300, c: "#ffd700" }
         };
 
-        const player = { x: 0, y: 0, h: 100, lastS: 0 };
-        let enemies = [], bullets = [], stars = [];
+        const player = { x: 0, y: 0, h: 100, lastS: 0, s: false, r: false, m: false, timers: {s:0, r:0, m:0} };
+        let enemies = [], bullets = [], stars = [], powerups = [];
         const eTypes = {
             d: {c:'#ff0040', h:1, s:3.5, sc:10, sz:22},
             h: {c:'#ff6600', h:3, s:4.5, sc:30, sz:28},
@@ -136,49 +136,43 @@
         window.addEventListener('resize', resize); resize();
 
         function applyPromo() {
-            const val = document.getElementById('promoInput').value;
-            if(val === '241700ftc') {
-                isCheatActive = true;
-                alert("ÜRETİCİ MODU AKTİF: TÜM GEMİLER ÜCRETSİZ!");
-                renderMarket();
-            } else { alert("GEÇERSİZ KOD!"); }
+            if(document.getElementById('promoInput').value === '241700ftc') {
+                isCheatActive = true; alert("ÜRETİCİ MODU AKTİF!"); renderMarket();
+            }
         }
 
         function startIntro() {
             document.getElementById('splash').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('splash').style.display = 'none';
-                updateCoinUI();
-                document.getElementById('bestS').innerText = bestS;
-            }, 500);
+            setTimeout(() => { document.getElementById('splash').style.display = 'none'; updateCoinUI(); document.getElementById('bestS').innerText = bestS; }, 500);
         }
 
+        // Ateş Etme Fonksiyonu
         function shoot() {
             if(!gameRunning) return;
             let now = Date.now();
-            if(now - player.lastS < 180) return;
+            let rate = player.r ? 100 : 200; // Seri ateş gücü varsa daha hızlı
+            if(now - player.lastS < rate) return;
+            
             try { let s = sfx.shoot.cloneNode(); s.volume = 0.1; s.play(); } catch(e){}
-            bullets.push({x: player.x, y: player.y - 30});
+            
+            if(player.m) { // Üçlü Ateş Gücü
+                bullets.push({x: player.x, y: player.y - 30, vx: 0}, {x: player.x, y: player.y - 30, vx: -3}, {x: player.x, y: player.y - 30, vx: 3});
+            } else {
+                bullets.push({x: player.x, y: player.y - 30, vx: 0});
+            }
             player.lastS = now;
         }
 
         const keys = {};
-        window.addEventListener('keydown', e => {
-            keys[e.key.toLowerCase()] = true;
-            if(e.code === 'Space') { e.preventDefault(); shoot(); }
-        });
+        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(e.code === 'Space') e.preventDefault(); });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); shoot(); isT=true; tX=e.touches[0].clientX; tY=e.touches[0].clientY; });
-        canvas.addEventListener('mousedown', () => shoot());
-
         let isT = false, tX = 0, tY = 0;
-        canvas.addEventListener('touchmove', e => {
-            if(!isT) return; e.preventDefault();
-            player.x += (e.touches[0].clientX - tX); player.y += (e.touches[0].clientY - tY);
-            tX = e.touches[0].clientX; tY = e.touches[0].clientY;
-        });
+        canvas.addEventListener('touchstart', e => { isT=true; tX=e.touches[0].clientX; tY=e.touches[0].clientY; if(gameRunning) shoot(); });
+        canvas.addEventListener('touchmove', e => { if(!isT) return; e.preventDefault(); player.x += (e.touches[0].clientX - tX); player.y += (e.touches[0].clientY - tY); tX = e.touches[0].clientX; tY = e.touches[0].clientY; });
         canvas.addEventListener('touchend', () => isT=false);
+        canvas.addEventListener('mousedown', () => { if(gameRunning) isT = true; });
+        canvas.addEventListener('mouseup', () => isT = false);
 
         function showMenu(id) {
             document.querySelectorAll('.menu').forEach(m => m.style.display = 'none');
@@ -192,47 +186,27 @@
             grid.innerHTML = '';
             for (let k in ships) {
                 const s = ships[k];
-                const isO = owned.includes(k);
-                const isS = currentShip === k;
-                const costDisplay = isCheatActive ? "0 CR" : s.cost + " CR";
-                grid.innerHTML += `
-                    <div class="market-item ${isO ? 'owned' : ''} ${isS ? 'selected' : ''}" onclick="handleBuy('${k}')">
-                        <div style="color:${s.c}; font-size:12px; font-weight:900;">${s.name}</div>
-                        <div style="color:#ff0; font-size:10px; margin-top:5px;">${isO ? (isS ? 'AKTİF' : 'SEÇ') : costDisplay}</div>
-                    </div>
-                `;
+                const isO = owned.includes(k), isS = currentShip === k;
+                grid.innerHTML += `<div class="market-item ${isO ? 'owned' : ''} ${isS ? 'selected' : ''}" onclick="handleBuy('${k}')">
+                    <div style="color:${s.c}; font-size:12px; font-weight:900;">${s.name}</div>
+                    <div style="color:#ff0; font-size:10px; margin-top:5px;">${isO ? (isS ? 'AKTİF' : 'SEÇ') : (isCheatActive ? "0 CR" : s.cost + " CR")}</div>
+                </div>`;
             }
         }
 
         function handleBuy(k) {
-            const s = ships[k];
-            const finalCost = isCheatActive ? 0 : s.cost;
-            if(owned.includes(k)) {
-                currentShip = k;
-                localStorage.setItem('fCu', k);
-            } else if(credits >= finalCost) {
-                credits -= finalCost;
-                owned.push(k);
-                currentShip = k;
-                localStorage.setItem('fCr', credits);
-                localStorage.setItem('fOw', JSON.stringify(owned));
-                localStorage.setItem('fCu', k);
-            }
-            renderMarket();
-            updateCoinUI();
+            const s = ships[k], cost = isCheatActive ? 0 : s.cost;
+            if(owned.includes(k)) { currentShip = k; localStorage.setItem('fCu', k); }
+            else if(credits >= cost) { credits -= cost; owned.push(k); currentShip = k; localStorage.setItem('fCr', credits); localStorage.setItem('fOw', JSON.stringify(owned)); localStorage.setItem('fCu', k); }
+            renderMarket(); updateCoinUI();
         }
 
         function updateCoinUI() { document.getElementById('coinWallet').innerText = "🪙 " + credits + " CR"; }
 
         function startGame() {
-            showMenu('none');
-            document.getElementById('uiBox').style.display = 'block';
-            gameRunning = true;
-            player.h = ships[currentShip].hp;
-            document.getElementById('hF').style.width = '100%';
-            sfx.bgm.play().catch(()=>{});
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
+            showMenu('none'); document.getElementById('uiBox').style.display = 'block'; document.getElementById('pUI').style.display = 'flex';
+            gameRunning = true; player.h = ships[currentShip].hp; document.getElementById('hF').style.width = '100%';
+            sfx.bgm.play().catch(()=>{}); lastTime = performance.now(); requestAnimationFrame(gameLoop);
         }
 
         function gameLoop(ts) {
@@ -242,59 +216,65 @@
             ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width, canvas.height);
             stars.forEach(st => { st.y += st.sp; if(st.y > canvas.height) st.y = 0; ctx.fillStyle='#fff'; ctx.fillRect(st.x, st.y, st.s, st.s); });
 
+            // Seri Ateş ve Hareket Kontrolü
+            if(keys[' ']) shoot();
             let sInfo = ships[currentShip];
             if(keys['w'] || keys['arrowup']) player.y -= sInfo.s;
             if(keys['s'] || keys['arrowdown']) player.y += sInfo.s;
             if(keys['a'] || keys['arrowleft']) player.x -= sInfo.s;
             if(keys['d'] || keys['arrowright']) player.x += sInfo.s;
-            
             player.x = Math.max(20, Math.min(canvas.width-20, player.x));
             player.y = Math.max(20, Math.min(canvas.height-20, player.y));
 
-            // JET ÇİZİMİ
-            ctx.save();
-            ctx.translate(player.x, player.y);
-            ctx.fillStyle = sInfo.c;
-            ctx.shadowBlur = 20; ctx.shadowColor = sInfo.c;
-            ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(-20, 15); ctx.lineTo(20, 15); ctx.fill();
-            ctx.restore();
+            // Süper Güç Zamanlayıcıları
+            ['s','r','m'].forEach(k => {
+                if(player.timers[k] > 0) {
+                    player.timers[k] -= dt;
+                    document.getElementById(k+'Unit').classList.add('active');
+                    document.getElementById(k+'Fill').style.width = (player.timers[k] / 10 * 100) + '%';
+                    if(player.timers[k] <= 0) { player[k] = false; document.getElementById(k+'Unit').classList.remove('active'); }
+                }
+            });
 
+            // Gemi Çizimi
+            if(player.s) { ctx.beginPath(); ctx.arc(player.x, player.y, 40, 0, Math.PI*2); ctx.strokeStyle='#0f0'; ctx.lineWidth=2; ctx.stroke(); }
+            ctx.fillStyle = sInfo.c; ctx.beginPath(); ctx.moveTo(player.x, player.y-25); ctx.lineTo(player.x-20, player.y+15); ctx.lineTo(player.x+20, player.y+15); ctx.fill();
+
+            // Mermiler
             for(let i=bullets.length-1; i>=0; i--){
-                bullets[i].y -= 12;
+                bullets[i].y -= 12; bullets[i].x += (bullets[i].vx || 0);
                 ctx.fillStyle='#fff'; ctx.fillRect(bullets[i].x-2, bullets[i].y, 4, 15);
                 if(bullets[i].y < -20) bullets.splice(i,1);
             }
 
+            // Düşman Spawning
             if(Math.random() < 0.045 + (level*0.005)){
                 let tArr = Object.keys(eTypes);
                 let t = tArr[Math.floor(Math.random()*(level > 3 ? 4 : 2))];
                 let d = eTypes[t];
-                enemies.push({...d, x: Math.random()*canvas.width, y:-60, ch: d.h, type: t});
+                enemies.push({...d, x: Math.random()*canvas.width, y:-60, ch: d.h, type: t, maxH: d.h});
             }
 
+            // Düşman Döngüsü
             for(let i=enemies.length-1; i>=0; i--){
                 let en = enemies[i]; en.y += en.s;
-                ctx.save();
-                ctx.translate(en.x, en.y);
-                ctx.fillStyle = en.c;
-                ctx.beginPath();
-                // ŞEKİLLİ DÜŞMANLAR
-                if(en.type === 'd') { ctx.moveTo(0, -11); ctx.lineTo(11, 11); ctx.lineTo(-11, 11); } // Drone (Üçgen)
-                else if(en.type === 'h') { ctx.rect(-12, -12, 24, 24); } // Hunter (Kare)
-                else if(en.type === 't') { ctx.arc(0, 0, 15, 0, Math.PI*2); } // Tank (Daire)
-                else { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*35, Math.sin(j/6*Math.PI*2)*35); } // Boss (Altıgen)
+                ctx.save(); ctx.translate(en.x, en.y); ctx.fillStyle = en.c; ctx.beginPath();
+                if(en.type === 'd') { ctx.moveTo(0, -11); ctx.lineTo(11, 11); ctx.lineTo(-11, 11); }
+                else if(en.type === 'h') { ctx.rect(-12, -12, 24, 24); }
+                else if(en.type === 't') { ctx.arc(0, 0, 15, 0, Math.PI*2); }
+                else { for(let j=0;j<6;j++) ctx.lineTo(Math.cos(j/6*Math.PI*2)*35, Math.sin(j/6*Math.PI*2)*35); }
                 ctx.fill();
+
+                // DÜŞMAN CAN BARI ÇİZİMİ
+                ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(-20, -25, 40, 5);
+                ctx.fillStyle = en.ch / en.maxH > 0.4 ? '#0f0' : '#f00';
+                ctx.fillRect(-20, -25, 40 * (en.ch / en.maxH), 5);
                 ctx.restore();
 
                 if(Math.hypot(player.x-en.x, player.y-en.y) < en.sz/2+22){
-                    player.h -= 20; sfx.boom.cloneNode().play().catch(()=>{}); enemies.splice(i,1);
-                    document.getElementById('hF').style.width = (player.h/sInfo.hp*100)+'%';
-                    if(player.h <= 0) {
-                        gameRunning = false; showMenu('overMenu');
-                        document.getElementById('resTxt').innerHTML = "SKOR: "+score;
-                        credits += Math.floor(score/4); localStorage.setItem('fCr', credits);
-                        if(score > bestS) { bestS = score; localStorage.setItem('fBs', score); }
-                    }
+                    if(!player.s) player.h -= 20; try { sfx.boom.cloneNode().play(); } catch(e){}
+                    enemies.splice(i,1); document.getElementById('hF').style.width = (player.h/ships[currentShip].hp*100)+'%';
+                    if(player.h <= 0) { gameRunning = false; showMenu('overMenu'); document.getElementById('resTxt').innerHTML = "SKOR: "+score; credits += Math.floor(score/4); localStorage.setItem('fCr', credits); if(score > bestS) localStorage.setItem('fBs', score); }
                     continue;
                 }
 
@@ -302,18 +282,25 @@
                     if(Math.hypot(b.x-en.x, b.y-en.y) < en.sz/2+10){
                         en.ch--; bullets.splice(bi,1);
                         if(en.ch <= 0){
-                            score += en.sc; sfx.boom.cloneNode().play().catch(()=>{});
+                            score += en.sc; try { sfx.boom.cloneNode().play(); } catch(e){}
+                            if(Math.random() < 0.15) powerups.push({x:en.x, y:en.y, t:['s','r','m'][Math.floor(Math.random()*3)]});
                             enemies.splice(i,1); if(score > level*1000) level++;
                         }
                     }
                 });
-                if(en.y > canvas.height+100) enemies.splice(i,1);
             }
 
-            document.getElementById('sTxt').innerText = "SKOR: " + score;
-            document.getElementById('lTxt').innerText = level;
-            updateCoinUI();
-            requestAnimationFrame(gameLoop);
+            // Powerup'lar
+            powerups.forEach((p, i) => {
+                p.y += 3; ctx.font='25px Arial'; ctx.fillText(p.t==='s'?'🛡️':p.t==='r'?'⚡':'🔥', p.x, p.y);
+                if(Math.hypot(player.x-p.x, player.y-p.y) < 40) {
+                    try { sfx.power.cloneNode().play(); } catch(e){}
+                    player[p.t] = true; player.timers[p.t] = 10; powerups.splice(i,1);
+                }
+            });
+
+            document.getElementById('sTxt').innerText = "SKOR: " + score; document.getElementById('lTxt').innerText = level;
+            updateCoinUI(); requestAnimationFrame(gameLoop);
         }
     </script>
 </body>
